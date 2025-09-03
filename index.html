@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Chart - Play Design Tool</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>Football Chart</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="home">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="chart">Chart</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="library">Library</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Home Page -->
+        <div id="home-page" class="page active">
+            <div class="hero-section">
+                <div class="container">
+                    <h1 class="hero-title">Dynamic Football Play Designer</h1>
+                    <p class="hero-subtitle">Create, save, and share professional football plays with ease</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" data-action="new-chart">Create New Play</button>
+                        <button class="btn btn-secondary" data-action="view-library">View Library</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <div class="container">
+                    <h2>Features</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">🎯</div>
+                            <h3>Dynamic Drawing</h3>
+                            <p>Draw positions, routes, and blocking schemes with precision</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">💾</div>
+                            <h3>Save & Load</h3>
+                            <p>Save plays in readable formats for easy manual editing</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">📚</div>
+                            <h3>Play Library</h3>
+                            <p>Organize plays by formation, tags, and features</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🖨️</div>
+                            <h3>Print Ready</h3>
+                            <p>Customizable coaching sheets for practice and games</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Page -->
+        <div id="chart-page" class="page">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title-section">
+                        <input type="text" id="play-name" placeholder="Enter play name..." class="play-name-input">
+                    </div>
+                    <div class="chart-actions">
+                        <button class="btn btn-secondary" id="save-play">Save Play</button>
+                        <button class="btn btn-secondary" id="load-play">Load Play</button>
+                        <button class="btn btn-secondary" id="clear-canvas">Clear</button>
+                    </div>
+                </div>
+
+                <div class="chart-workspace">
+                    <div class="toolbar">
+                        <div class="tool-section">
+                            <h4>Tools</h4>
+                            <button class="tool-btn active" data-tool="select">Select</button>
+                            <button class="tool-btn" data-tool="position">Position</button>
+                            <button class="tool-btn" data-tool="route">Route</button>
+                            <button class="tool-btn" data-tool="block">Block</button>
+                        </div>
+
+                        <div class="tool-section" id="action-controls">
+                            <h4>Action Mode</h4>
+                            <button class="action-btn active" data-action="move">Move</button>
+                            <button class="action-btn" data-action="route">Route</button>
+                            <button class="action-btn" data-action="block">Block</button>
+                            <div class="action-status" id="action-status">Click and drag to move positions</div>
+                            <div class="action-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="collision-toggle" checked>
+                                    Avoid collisions
+                                </label>
+                                <button class="btn btn-xs" id="finish-route">Finish Route</button>
+                                <button class="btn btn-xs" id="remove-segment">Remove Segment</button>
+                            </div>
+                        </div>
+
+                        <div class="tool-section">
+                            <h4>Shapes</h4>
+                            <div class="shape-grid">
+                                <button class="shape-btn" data-shape="circle">○</button>
+                                <button class="shape-btn" data-shape="square">□</button>
+                                <button class="shape-btn" data-shape="triangle">△</button>
+                                <button class="shape-btn" data-shape="diamond">◇</button>
+                                <button class="shape-btn" data-shape="x">✕</button>
+                                <button class="shape-btn" data-shape="line">—</button>
+                            </div>
+                        </div>
+
+                        <div class="tool-section">
+                            <h4>Colors</h4>
+                            <div class="color-grid">
+                                <button class="color-btn" data-color="#000000"
+                                    style="background-color: #000000;"></button>
+                                <button class="color-btn" data-color="#FF6B35"
+                                    style="background-color: #FF6B35;"></button>
+                                <button class="color-btn" data-color="#FFFFFF"
+                                    style="background-color: #FFFFFF; border: 1px solid #ccc;"></button>
+                                <button class="color-btn" data-color="#007BFF"
+                                    style="background-color: #007BFF;"></button>
+                                <button class="color-btn" data-color="#28A745"
+                                    style="background-color: #28A745;"></button>
+                                <button class="color-btn" data-color="#DC3545"
+                                    style="background-color: #DC3545;"></button>
+                            </div>
+                        </div>
+
+                        <div class="tool-section">
+                            <h4>Default Lineups</h4>
+                            <button class="lineup-btn" data-lineup="linemen-only">Linemen Only</button>
+                            <button class="lineup-btn" data-lineup="i-formation">I-Formation</button>
+                            <button class="lineup-btn" data-lineup="shotgun">Shotgun</button>
+                            <button class="lineup-btn" data-lineup="pistol">Pistol</button>
+                            <button class="lineup-btn" data-lineup="wildcat">Wildcat</button>
+                            <button class="lineup-btn" data-lineup="goal-line">Goal Line</button>
+                        </div>
+
+                        <div class="tool-section">
+                            <h4>Custom Lineups</h4>
+                            <input type="text" id="lineup-name" placeholder="Lineup name...">
+                            <button class="btn btn-small" id="save-lineup">Save Lineup</button>
+                            <div id="saved-lineups" class="saved-lineups"></div>
+                        </div>
+
+                        <div class="tool-section">
+                            <h4>Properties</h4>
+                            <label>Position Name:</label>
+                            <input type="text" id="position-name" placeholder="e.g., QB, RB, WR1">
+                            <label>Player Name:</label>
+                            <input type="text" id="player-name" placeholder="e.g., Smith">
+                        </div>
+                    </div>
+
+                    <div class="canvas-container">
+                        <canvas id="football-field" width="400" height="600"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Library Page -->
+        <div id="library-page" class="page">
+            <div class="library-container">
+                <div class="library-header">
+                    <h2>Play Library</h2>
+                    <div class="library-actions">
+                        <input type="file" id="import-play" accept=".json" style="display: none;">
+                        <button class="btn btn-secondary"
+                            onclick="document.getElementById('import-play').click()">Import Play</button>
+                        <button class="btn btn-primary" data-action="new-chart">New Play</button>
+                    </div>
+                </div>
+
+                <div class="library-filters">
+                    <div class="filter-group">
+                        <label>Search:</label>
+                        <input type="text" id="play-search" placeholder="Search plays...">
+                    </div>
+                    <div class="filter-group">
+                        <label>Formation:</label>
+                        <select id="formation-filter">
+                            <option value="">All Formations</option>
+                            <option value="I-Formation">I-Formation</option>
+                            <option value="Shotgun">Shotgun</option>
+                            <option value="Pistol">Pistol</option>
+                            <option value="Wildcat">Wildcat</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Tags:</label>
+                        <input type="text" id="tag-filter" placeholder="Enter tags...">
+                    </div>
+                </div>
+
+                <div class="plays-grid" id="plays-grid">
+                    <!-- Plays will be dynamically loaded here -->
+                </div>
+
+                <div class="print-options">
+                    <h3>Print Options</h3>
+                    <div class="print-controls">
+                        <div class="print-group">
+                            <label>Layout:</label>
+                            <select id="print-layout">
+                                <option value="1x1">1×1 (Full Page)</option>
+                                <option value="2x1">2×1 (Two Plays)</option>
+                                <option value="2x2">2×2 (Four Plays)</option>
+                                <option value="3x2">3×2 (Six Plays)</option>
+                            </select>
+                        </div>
+                        <div class="print-group">
+                            <label>
+                                <input type="checkbox" id="color-print"> Color Print
+                            </label>
+                        </div>
+                        <div class="print-group">
+                            <label>Font Size:</label>
+                            <select id="font-size">
+                                <option value="small">Small</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="large">Large</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="print-plays">Print Selected</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/lineups.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/library.js"></script>
+</body>
+
+</html>
