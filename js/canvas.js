@@ -412,10 +412,9 @@ class CanvasManager {
             return false;
         }
 
-        // If we're in block drawing mode, add final point and finish the block
+        // If we're in block drawing mode, finish the block without adding current point
         if (this.blockDrawingMode && this.activeBlock) {
-            // Add the current mouse position as the final point
-            this.addBlockPoint(x, y);
+            // Don't add the current mouse position, just finish with existing points
             this.finishBlock();
             return false;
         }
@@ -1601,25 +1600,28 @@ class CanvasManager {
 
             this.ctx.stroke();
 
-            // Draw T-bars with preview
-            for (let i = 1; i < block.path.length; i++) {
-                const from = this.editingBlockPointIndex === i - 1 ? this.previewPoint : block.path[i - 1];
-                const to = this.editingBlockPointIndex === i ? this.previewPoint : block.path[i];
+            // Draw T-bar only at the final point with preview
+            if (block.path.length >= 2) {
+                const secondLastIndex = block.path.length - 2;
+                const finalIndex = block.path.length - 1;
+                
+                const secondLast = this.editingBlockPointIndex === secondLastIndex ? this.previewPoint : block.path[secondLastIndex];
+                const finalPoint = this.editingBlockPointIndex === finalIndex ? this.previewPoint : block.path[finalIndex];
 
                 // Calculate perpendicular direction for T-bar
-                const angle = Math.atan2(to.y - from.y, to.x - from.x);
+                const angle = Math.atan2(finalPoint.y - secondLast.y, finalPoint.x - secondLast.x);
                 const perpAngle = angle + Math.PI / 2;
                 const tBarLength = 15;
 
-                // Draw T-bar at the end point
+                // Draw T-bar at the final point only
                 this.ctx.beginPath();
                 this.ctx.moveTo(
-                    to.x - Math.cos(perpAngle) * tBarLength,
-                    to.y - Math.sin(perpAngle) * tBarLength
+                    finalPoint.x - Math.cos(perpAngle) * tBarLength,
+                    finalPoint.y - Math.sin(perpAngle) * tBarLength
                 );
                 this.ctx.lineTo(
-                    to.x + Math.cos(perpAngle) * tBarLength,
-                    to.y + Math.sin(perpAngle) * tBarLength
+                    finalPoint.x + Math.cos(perpAngle) * tBarLength,
+                    finalPoint.y + Math.sin(perpAngle) * tBarLength
                 );
                 this.ctx.stroke();
             }
@@ -1658,25 +1660,25 @@ class CanvasManager {
 
         this.ctx.stroke();
 
-        // Draw T-bars at each segment end to indicate blocking
-        for (let i = 1; i < block.path.length; i++) {
-            const from = block.path[i - 1];
-            const to = block.path[i];
+        // Draw T-bar only at the final point to indicate blocking
+        if (block.path.length >= 2) {
+            const secondLast = block.path[block.path.length - 2];
+            const finalPoint = block.path[block.path.length - 1];
 
             // Calculate perpendicular direction for T-bar
-            const angle = Math.atan2(to.y - from.y, to.x - from.x);
+            const angle = Math.atan2(finalPoint.y - secondLast.y, finalPoint.x - secondLast.x);
             const perpAngle = angle + Math.PI / 2;
             const tBarLength = 15;
 
-            // Draw T-bar at the end point
+            // Draw T-bar at the final point only
             this.ctx.beginPath();
             this.ctx.moveTo(
-                to.x - Math.cos(perpAngle) * tBarLength,
-                to.y - Math.sin(perpAngle) * tBarLength
+                finalPoint.x - Math.cos(perpAngle) * tBarLength,
+                finalPoint.y - Math.sin(perpAngle) * tBarLength
             );
             this.ctx.lineTo(
-                to.x + Math.cos(perpAngle) * tBarLength,
-                to.y + Math.sin(perpAngle) * tBarLength
+                finalPoint.x + Math.cos(perpAngle) * tBarLength,
+                finalPoint.y + Math.sin(perpAngle) * tBarLength
             );
             this.ctx.stroke();
         }
