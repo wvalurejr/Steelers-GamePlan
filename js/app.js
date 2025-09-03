@@ -51,28 +51,28 @@ class FootballChartApp {
     setupThemeToggle() {
         const themeToggle = document.getElementById('theme-toggle');
         const currentTheme = localStorage.getItem('theme') || 'dark'; // Default to dark theme
-        
+
         // Set initial theme
         document.documentElement.setAttribute('data-theme', currentTheme);
         themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-        
+
         // Set default highlight color to light green
         this.currentColor = '#32CD32';
-        
+
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
+
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-            
+
             // Update canvas if it exists
             if (window.canvasManager) {
                 window.canvasManager.render();
             }
         });
-    }    setupEventListeners() {
+    } setupEventListeners() {
         // Hero action buttons
         document.querySelectorAll('[data-action="new-chart"]').forEach(btn => {
             btn.addEventListener('click', () => this.showPage('chart'));
