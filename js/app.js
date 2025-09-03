@@ -352,7 +352,7 @@ class FootballChartApp {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
-        
+
         const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
         if (activeLink) {
             activeLink.classList.add('active');

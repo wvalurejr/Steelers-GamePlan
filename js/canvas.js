@@ -8,7 +8,7 @@ class CanvasManager {
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
         this.potentialDrag = false;
-        this.dragThreshold = 5; // pixels
+        this.dragThreshold = 8; // pixels (increased from 5 for less sensitivity)
         this.dragStartPosition = { x: 0, y: 0 };
         this.tool = 'select';
         this.actionMode = 'move'; // 'move', 'route', 'block'
@@ -193,6 +193,11 @@ class CanvasManager {
     }
 
     handleMouseDown(e) {
+        // Only handle left mouse button (button 0) for dragging operations
+        if (e.button !== 0) {
+            return;
+        }
+
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -326,6 +331,11 @@ class CanvasManager {
     }
 
     handleMouseUp(e) {
+        // Only handle left mouse button (button 0) for drag operations
+        if (e.button !== 0) {
+            return;
+        }
+
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
