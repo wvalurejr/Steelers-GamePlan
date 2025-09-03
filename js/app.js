@@ -92,11 +92,11 @@ class FootballChartApp {
     } setupEventListeners() {
         // Hero action buttons
         document.querySelectorAll('[data-action="new-chart"]').forEach(btn => {
-            btn.addEventListener('click', () => this.showPage('chart'));
+            btn.addEventListener('click', () => this.navigateToPage('chart'));
         });
 
         document.querySelectorAll('[data-action="view-library"]').forEach(btn => {
-            btn.addEventListener('click', () => this.showPage('library'));
+            btn.addEventListener('click', () => this.navigateToPage('library'));
         });
 
         // Tool selection
@@ -244,6 +244,9 @@ class FootballChartApp {
             targetPage.classList.add('active');
             this.currentPage = pageId;
 
+            // Update navigation highlighting
+            this.updateNavigationForPage(pageId);
+
             // Initialize page-specific functionality
             switch (pageId) {
                 case 'chart':
@@ -342,6 +345,18 @@ class FootballChartApp {
             link.classList.remove('active');
         });
         activeLink.classList.add('active');
+    }
+
+    updateNavigationForPage(pageId) {
+        // Update navigation highlighting based on current page
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
     }
 
     selectTool(tool) {
