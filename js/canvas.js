@@ -18,6 +18,20 @@ class CanvasManager {
         this.activeRoute = null; // For multi-segment routes
         this.avoidCollisions = true; // Default collision avoidance
         this.snapToGrid = true; // Default snap to grid lines
+        this.routeDrawingMode = false; // Track if we're in active route drawing mode
+        this.previewPoint = null; // For showing arrow preview before placing point
+        this.currentRoute = null; // Currently being drawn route
+        this.editingRoutePoint = false; // Track if we're editing a route point
+        this.editingRoute = null; // The route being edited
+        this.editingPointIndex = -1; // The index of the point being edited
+        this.originalPoint = null; // Store original point position for editing
+
+        // Block drawing and editing state
+        this.blockDrawingMode = false; // Track if we're in active block drawing mode
+        this.activeBlock = null; // Currently being drawn block
+        this.editingBlockPoint = false; // Track if we're editing a block point
+        this.editingBlock = null; // The block being edited
+        this.editingBlockPointIndex = -1; // The index of the block point being edited
 
         this.init();
     }
@@ -218,6 +232,62 @@ class CanvasManager {
             this.selectedElement.x = newX;
             this.selectedElement.y = newY;
             this.render();
+        } else if (this.editingRoutePoint && this.editingRoute) {
+            // Show preview of route point being edited
+            let newX = x;
+            let newY = y;
+
+            // Apply snapping if enabled
+            if (this.snapToGrid) {
+                const snapped = this.snapCoordinates(newX, newY);
+                newX = snapped.x;
+                newY = snapped.y;
+            }
+
+            this.previewPoint = { x: newX, y: newY };
+            this.render();
+        } else if (this.editingBlockPoint && this.editingBlock) {
+            // Show preview of block point being edited
+            let newX = x;
+            let newY = y;
+
+            // Apply snapping if enabled
+            if (this.snapToGrid) {
+                const snapped = this.snapCoordinates(newX, newY);
+                newX = snapped.x;
+                newY = snapped.y;
+            }
+
+            this.previewPoint = { x: newX, y: newY };
+            this.render();
+        } else if (this.routeDrawingMode && this.activeRoute) {
+            // Show preview arrow for next route point
+            let previewX = x;
+            let previewY = y;
+
+            // Apply snapping if enabled
+            if (this.snapToGrid) {
+                const snapped = this.snapCoordinates(previewX, previewY);
+                previewX = snapped.x;
+                previewY = snapped.y;
+            }
+
+            this.previewPoint = { x: previewX, y: previewY };
+            this.render();
+        } else if (this.blockDrawingMode && this.activeBlock) {
+            // Show preview line for next block point
+            let previewX = x;
+            let previewY = y;
+
+            // Apply snapping if enabled
+            if (this.snapToGrid) {
+                const snapped = this.snapCoordinates(previewX, previewY);
+                previewX = snapped.x;
+                previewY = snapped.y;
+            }
+
+            this.previewPoint = { x: previewX, y: previewY };
+            this.render();
         } else if (this.isDrawing) {
             if (this.actionMode === 'route' || this.actionMode === 'block' || this.tool === 'route' || this.tool === 'block') {
                 // Add point if we've moved enough distance to avoid duplicate points
@@ -243,6 +313,18 @@ class CanvasManager {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        // If we're editing a route point, complete the edit
+        if (this.editingRoutePoint && this.editingRoute && this.previewPoint) {
+            this.completeRoutePointEdit();
+            return;
+        }
+
+        // If we're editing a block point, complete the edit
+        if (this.editingBlockPoint && this.editingBlock && this.previewPoint) {
+            this.completeBlockPointEdit();
+            return;
+        }
+
         if (this.isDrawing && (this.actionMode === 'route' || this.actionMode === 'block' || this.tool === 'route' || this.tool === 'block')) {
             // Don't finish immediately - allow for multi-segment drawing
             // Double-click or right-click will finish the path
@@ -266,16 +348,40 @@ class CanvasManager {
     handleRightClick(e) {
         e.preventDefault(); // Prevent context menu
 
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // If we're in route drawing mode, add final point and finish the route
+        if (this.routeDrawingMode && this.activeRoute) {
+            // Add the current mouse position as the final point
+            this.addRoutePoint(x, y);
+            this.finishRoute();
+            return false;
+        }
+
+        // If we're in block drawing mode, add final point and finish the block
+        if (this.blockDrawingMode && this.activeBlock) {
+            // Add the current mouse position as the final point
+            this.addBlockPoint(x, y);
+            this.finishBlock();
+            return false;
+        }
+
         // Cancel any pending operations
         if (this.isDrawing) {
             this.currentPath = [];
             this.isDrawing = false;
             this.activeRoute = null;
+            this.activeBlock = null;
         }
 
         // Deselect current position
         this.selectedElement = null;
         this.isDragging = false;
+        this.routeDrawingMode = false;
+        this.blockDrawingMode = false;
+        this.previewPoint = null;
 
         // Update status in app
         if (window.footballApp) {
@@ -330,6 +436,42 @@ class CanvasManager {
     handleSelectWithAction(x, y) {
         const element = this.getElementAt(x, y);
 
+        // If we're in route drawing mode and click on empty space, add route point
+        if (this.routeDrawingMode && this.actionMode === 'route' && !element) {
+            this.addRoutePoint(x, y);
+            return;
+        }
+
+        // If we're in block drawing mode and click on empty space, add block point
+        if (this.blockDrawingMode && this.actionMode === 'block' && !element) {
+            this.addBlockPoint(x, y);
+            return;
+        }
+
+        // If we click on a route point, start editing it
+        if (element && element.isRoutePoint && this.actionMode === 'route') {
+            this.startRoutePointEdit(element, element.pointIndex);
+            return;
+        }
+
+        // If we click on a block point, start editing it
+        if (element && element.isBlockPoint && this.actionMode === 'block') {
+            this.startBlockPointEdit(element, element.pointIndex);
+            return;
+        }
+
+        // If we click on a route while in route mode, allow editing
+        if (this.routeDrawingMode && this.actionMode === 'route' && element && element.type === 'route') {
+            this.editRoutePoint(element, x, y);
+            return;
+        }
+
+        // If we click on a block while in block mode, allow editing
+        if (this.blockDrawingMode && this.actionMode === 'block' && element && element.type === 'block') {
+            this.editBlockPoint(element, x, y);
+            return;
+        }
+
         if (element && element.type === 'position') {
             // Keep the position selected for modification
             this.selectedElement = element;
@@ -341,10 +483,24 @@ class CanvasManager {
                     this.dragOffset.y = y - element.y;
                     break;
                 case 'route':
-                    this.startRouteFromPosition(element, x, y);
+                    // If already in route drawing mode for this position, continue
+                    if (this.routeDrawingMode && this.activeRoute && this.activeRoute.startPosition === element) {
+                        // Continue adding points to existing route
+                        this.previewPoint = null;
+                    } else {
+                        // Start new route from this position
+                        this.startRouteFromPosition(element, x, y);
+                    }
                     break;
                 case 'block':
-                    this.startBlockFromPosition(element, x, y);
+                    // If already in block drawing mode for this position, continue
+                    if (this.blockDrawingMode && this.activeBlock && this.activeBlock.startPosition === element) {
+                        // Continue adding points to existing block
+                        this.previewPoint = null;
+                    } else {
+                        // Start new block from this position
+                        this.startBlockFromPosition(element, x, y);
+                    }
                     break;
             }
 
@@ -355,7 +511,7 @@ class CanvasManager {
             if (window.footballApp) {
                 window.footballApp.updateSelectionStatus(element);
             }
-        } else if (!this.isDrawing) {
+        } else if (!this.isDrawing && !this.routeDrawingMode) {
             // Only deselect if we're not in the middle of drawing
             // Right-click will handle deselection during drawing
             // Keep current selection if clicking empty space
@@ -366,24 +522,150 @@ class CanvasManager {
 
     // Start a route from a selected position
     startRouteFromPosition(position, x, y) {
-        this.isDrawing = true;
+        // Clear any existing drawing modes to prevent conflicts
+        this.clearDrawingModes();
+
+        // Check if position already has a route, remove it
+        this.removeExistingRouteForPosition(position);
+
+        this.routeDrawingMode = true;
+        this.isDrawing = false; // We'll set this true when we start placing points
         this.currentPath = [{ x: position.x, y: position.y }];
         this.activeRoute = {
             type: 'route',
             startPosition: position,
-            segments: []
+            segments: [],
+            path: [{ x: position.x, y: position.y }],
+            color: this.color
         };
+
+        // Update status
+        if (window.footballApp) {
+            const statusElement = document.getElementById('action-status');
+            if (statusElement) {
+                statusElement.textContent = 'Click anywhere to add route points. Right-click to finish route.';
+            }
+        }
+    }
+
+    // Add a point to the current route
+    addRoutePoint(x, y) {
+        if (!this.routeDrawingMode || !this.activeRoute) return;
+
+        // Apply snapping if enabled
+        if (this.snapToGrid) {
+            const snapped = this.snapCoordinates(x, y);
+            x = snapped.x;
+            y = snapped.y;
+        }
+
+        const lastPoint = this.activeRoute.path[this.activeRoute.path.length - 1];
+
+        // Check for collision avoidance
+        if (this.avoidCollisions) {
+            const avoidedPath = this.calculateAvoidancePath(lastPoint, { x, y });
+            // Add intermediate points if needed to avoid positions
+            for (let i = 1; i < avoidedPath.length; i++) {
+                this.activeRoute.path.push(avoidedPath[i]);
+            }
+        } else {
+            this.activeRoute.path.push({ x, y });
+        }
+
+        this.currentPath = [...this.activeRoute.path];
+        this.previewPoint = null;
+        this.render();
+    }
+
+    // Calculate path that avoids positions
+    calculateAvoidancePath(from, to) {
+        if (!this.avoidCollisions) return [from, to];
+
+        const path = [from];
+        let current = from;
+        const target = to;
+        const maxIterations = 10;
+        let iterations = 0;
+
+        while (this.distanceBetweenPoints(current, target) > 10 && iterations < maxIterations) {
+            iterations++;
+
+            // Check if direct path is clear
+            if (!this.checkPathCollision(current, target)) {
+                path.push(target);
+                break;
+            }
+
+            // Find intermediate point that avoids collisions
+            const intermediatePoint = this.findAvoidancePoint(current, target);
+            if (intermediatePoint) {
+                path.push(intermediatePoint);
+                current = intermediatePoint;
+            } else {
+                // If we can't find a good avoidance point, go direct
+                path.push(target);
+                break;
+            }
+        }
+
+        return path;
+    }
+
+    // Find a point that avoids positions between current and target
+    findAvoidancePoint(from, to) {
+        const midX = (from.x + to.x) / 2;
+        const midY = (from.y + to.y) / 2;
+
+        // Try points in a small radius around the midpoint
+        const radius = 30;
+        const angles = [0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, 5 * Math.PI / 4, 3 * Math.PI / 2, 7 * Math.PI / 4];
+
+        for (let angle of angles) {
+            const testPoint = {
+                x: midX + Math.cos(angle) * radius,
+                y: midY + Math.sin(angle) * radius
+            };
+
+            if (!this.checkPathCollision(from, testPoint) && !this.checkPathCollision(testPoint, to)) {
+                return testPoint;
+            }
+        }
+
+        return null;
+    }
+
+    // Helper function to calculate distance between two points
+    distanceBetweenPoints(p1, p2) {
+        return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
     }
 
     // Start a block from a selected position
     startBlockFromPosition(position, x, y) {
-        this.isDrawing = true;
+        // Clear any existing drawing modes to prevent conflicts
+        this.clearDrawingModes();
+
+        // Check if position already has a block, remove it
+        this.removeExistingBlockForPosition(position);
+
+        this.blockDrawingMode = true;
+        this.isDrawing = false; // We'll set this true when we start placing points
         this.currentPath = [{ x: position.x, y: position.y }];
-        this.activeRoute = {
+        this.activeBlock = {
             type: 'block',
             startPosition: position,
-            segments: []
+            path: [{ x: position.x, y: position.y }],
+            color: this.color
         };
+
+        // Update status
+        if (window.footballApp) {
+            const statusElement = document.getElementById('action-status');
+            if (statusElement) {
+                statusElement.textContent = `Block started from ${position.name || 'position'}. Click to add points, right-click to finish.`;
+            }
+        }
+
+        this.render();
     }
 
     // Check if a path segment would collide with any positions
@@ -401,24 +683,359 @@ class CanvasManager {
         return false;
     }
 
-    // Finish the current drawing operation
-    finishDrawing() {
-        if (this.isDrawing && this.currentPath.length > 1) {
-            const path = {
-                type: this.actionMode === 'route' ? 'route' : (this.actionMode === 'block' ? 'block' : this.tool),
-                path: [...this.currentPath],
+    // Finish the current route
+    finishRoute() {
+        if (this.routeDrawingMode && this.activeRoute && this.activeRoute.path.length > 1) {
+            const route = {
+                type: 'route',
+                path: [...this.activeRoute.path],
                 color: this.color,
                 id: Date.now().toString(),
-                startPosition: this.activeRoute?.startPosition || null
+                startPosition: this.activeRoute.startPosition
             };
 
-            this.elements.push(path);
-            this.render();
+            this.elements.push(route);
         }
 
-        this.currentPath = [];
-        this.isDrawing = false;
+        // Reset route drawing state
+        this.routeDrawingMode = false;
         this.activeRoute = null;
+        this.currentPath = [];
+        this.previewPoint = null;
+        this.isDrawing = false;
+
+        // Update status
+        if (window.footballApp) {
+            const statusElement = document.getElementById('action-status');
+            if (statusElement) {
+                statusElement.textContent = 'Route completed. Select a position or start a new route.';
+            }
+        }
+
+        this.render();
+    }
+
+    // Start editing a route point
+    startRoutePointEdit(element, pointIndex) {
+        // Find the original route element in the elements array
+        const routeElement = this.elements.find(el =>
+            el.type === 'route' &&
+            el.id === element.id
+        );
+
+        if (!routeElement || pointIndex < 0 || pointIndex >= routeElement.path.length) {
+            return;
+        }
+
+        this.editingRoutePoint = true;
+        this.editingRoute = routeElement;
+        this.editingPointIndex = pointIndex;
+        this.originalPoint = { ...routeElement.path[pointIndex] };
+
+        // Set the preview point to current position
+        this.previewPoint = { ...routeElement.path[pointIndex] };
+
+        // Update status
+        if (window.footballApp) {
+            const statusElement = document.getElementById('action-status');
+            if (statusElement) {
+                statusElement.textContent = `Editing route point ${pointIndex + 1}. Move mouse and click to reposition.`;
+            }
+        }
+
+        this.render();
+    }
+
+    // Complete the route point edit
+    completeRoutePointEdit() {
+        if (!this.editingRoutePoint || !this.editingRoute || !this.previewPoint) {
+            return;
+        }
+
+        // Apply snapping if enabled
+        let newX = this.previewPoint.x;
+        let newY = this.previewPoint.y;
+
+        if (this.snapToGrid) {
+            const snapped = this.snapCoordinates(newX, newY);
+            newX = snapped.x;
+            newY = snapped.y;
+        }
+
+        // Update the route point
+        this.editingRoute.path[this.editingPointIndex] = { x: newX, y: newY };
+
+        // Reset editing state
+        this.editingRoutePoint = false;
+        this.editingRoute = null;
+        this.editingPointIndex = -1;
+        this.originalPoint = null;
+        this.previewPoint = null;
+
+        // Update status
+        if (window.footballApp) {
+            const statusElement = document.getElementById('action-status');
+            if (statusElement) {
+                statusElement.textContent = 'Route point updated. Click on another route point to edit or change action mode.';
+            }
+        }
+
+        this.render();
+    }
+
+    // Method for editing route points (drag to move)
+    editRoutePoint(route, x, y) {
+        // Find the closest point in the route
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+
+        for (let i = 0; i < route.path.length; i++) {
+            const point = route.path[i];
+            const distance = Math.sqrt(Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2));
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = i;
+            }
+        }
+
+        // If close enough to a point, start dragging it
+        if (closestDistance < 15) {
+            this.isDragging = true;
+            this.selectedRoutePoint = { route, index: closestIndex };
+            this.dragOffset = {
+                x: x - route.path[closestIndex].x,
+                y: y - route.path[closestIndex].y
+            };
+        }
+    }
+
+    // Add a block point to the current block being drawn
+    addBlockPoint(x, y) {
+        if (!this.blockDrawingMode || !this.activeBlock) return;
+
+        // Apply snapping if enabled
+        if (this.snapToGrid) {
+            const snapped = this.snapCoordinates(x, y);
+            x = snapped.x;
+            y = snapped.y;
+        }
+
+        const lastPoint = this.activeBlock.path[this.activeBlock.path.length - 1];
+
+        // Check for collision avoidance
+        if (this.avoidCollisions) {
+            const avoidedPath = this.calculateAvoidancePath(lastPoint, { x, y });
+            // Add intermediate points if needed to avoid positions
+            for (let i = 1; i < avoidedPath.length; i++) {
+                this.activeBlock.path.push(avoidedPath[i]);
+            }
+        } else {
+            this.activeBlock.path.push({ x, y });
+        }
+
+        this.currentPath = [...this.activeBlock.path];
+        this.previewPoint = null;
+        this.render();
+    }
+
+    // Finish the current block
+    finishBlock() {
+        if (this.blockDrawingMode && this.activeBlock && this.activeBlock.path.length > 1) {
+            const block = {
+                type: 'block',
+                path: [...this.activeBlock.path],
+                color: this.color,
+                id: Date.now().toString(),
+                startPosition: this.activeBlock.startPosition
+            };
+
+            this.elements.push(block);
+        }
+
+        // Reset block drawing state
+        this.blockDrawingMode = false;
+        this.activeBlock = null;
+        this.currentPath = [];
+        this.previewPoint = null;
+        this.isDrawing = false;
+
+        // Update status
+        if (window.footballApp) {
+            const statusElement = document.getElementById('action-status');
+            if (statusElement) {
+                statusElement.textContent = 'Block completed. Select a position or start a new block.';
+            }
+        }
+
+        this.render();
+    }
+
+    // Start editing a block point
+    startBlockPointEdit(element, pointIndex) {
+        // Find the original block element in the elements array
+        const blockElement = this.elements.find(el =>
+            el.type === 'block' &&
+            el.id === element.id
+        );
+
+        if (!blockElement || pointIndex < 0 || pointIndex >= blockElement.path.length) {
+            return;
+        }
+
+        this.editingBlockPoint = true;
+        this.editingBlock = blockElement;
+        this.editingBlockPointIndex = pointIndex;
+        this.originalPoint = { ...blockElement.path[pointIndex] };
+
+        // Set the preview point to current position
+        this.previewPoint = { ...blockElement.path[pointIndex] };
+
+        // Update status
+        if (window.footballApp) {
+            const statusElement = document.getElementById('action-status');
+            if (statusElement) {
+                statusElement.textContent = `Editing block point ${pointIndex + 1}. Move mouse and click to reposition.`;
+            }
+        }
+
+        this.render();
+    }
+
+    // Complete the block point edit
+    completeBlockPointEdit() {
+        if (!this.editingBlockPoint || !this.editingBlock || !this.previewPoint) {
+            return;
+        }
+
+        // Apply snapping if enabled
+        let newX = this.previewPoint.x;
+        let newY = this.previewPoint.y;
+
+        if (this.snapToGrid) {
+            const snapped = this.snapCoordinates(newX, newY);
+            newX = snapped.x;
+            newY = snapped.y;
+        }
+
+        // Update the block point
+        this.editingBlock.path[this.editingBlockPointIndex] = { x: newX, y: newY };
+
+        // Reset editing state
+        this.editingBlockPoint = false;
+        this.editingBlock = null;
+        this.editingBlockPointIndex = -1;
+        this.originalPoint = null;
+        this.previewPoint = null;
+
+        // Update status
+        if (window.footballApp) {
+            const statusElement = document.getElementById('action-status');
+            if (statusElement) {
+                statusElement.textContent = 'Block point updated. Click on another block point to edit or change action mode.';
+            }
+        }
+
+        this.render();
+    }
+
+    // Clear all drawing modes to prevent conflicts
+    clearDrawingModes() {
+        this.routeDrawingMode = false;
+        this.blockDrawingMode = false;
+        this.activeRoute = null;
+        this.activeBlock = null;
+        this.previewPoint = null;
+        this.isDrawing = false;
+        this.currentPath = [];
+
+        // Clear editing states
+        this.editingRoutePoint = false;
+        this.editingRoute = null;
+        this.editingPointIndex = -1;
+        this.editingBlockPoint = false;
+        this.editingBlock = null;
+        this.editingBlockPointIndex = -1;
+        this.originalPoint = null;
+    }
+
+    // Remove existing route for a position (only one route per position)
+    removeExistingRouteForPosition(position) {
+        this.elements = this.elements.filter(element =>
+            !(element.type === 'route' &&
+                element.startPosition &&
+                element.startPosition.x === position.x &&
+                element.startPosition.y === position.y)
+        );
+    }
+
+    // Remove existing block for a position (only one block per position)
+    removeExistingBlockForPosition(position) {
+        this.elements = this.elements.filter(element =>
+            !(element.type === 'block' &&
+                element.startPosition &&
+                element.startPosition.x === position.x &&
+                element.startPosition.y === position.y)
+        );
+    }
+
+    // Get route or block associated with a position for editing
+    getRouteForPosition(position) {
+        return this.elements.find(element =>
+            element.type === 'route' &&
+            element.startPosition &&
+            element.startPosition.x === position.x &&
+            element.startPosition.y === position.y
+        );
+    }
+
+    getBlockForPosition(position) {
+        return this.elements.find(element =>
+            element.type === 'block' &&
+            element.startPosition &&
+            element.startPosition.x === position.x &&
+            element.startPosition.y === position.y
+        );
+    }
+
+    // Change color of existing route or block
+    changeRouteColor(route, newColor) {
+        if (route && route.type === 'route') {
+            route.color = newColor;
+            this.render();
+        }
+    }
+
+    changeBlockColor(block, newColor) {
+        if (block && block.type === 'block') {
+            block.color = newColor;
+            this.render();
+        }
+    }
+
+    // Method for editing block points
+    editBlockPoint(block, x, y) {
+        // Find the closest point in the block
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+
+        for (let i = 0; i < block.path.length; i++) {
+            const point = block.path[i];
+            const distance = Math.sqrt(Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2));
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = i;
+            }
+        }
+
+        // If close enough to a point, start dragging it
+        if (closestDistance < 15) {
+            this.isDragging = true;
+            this.selectedBlockPoint = { block, index: closestIndex };
+            this.dragOffset = {
+                x: x - block.path[closestIndex].x,
+                y: y - block.path[closestIndex].y
+            };
+        }
     }
 
     createPosition(x, y) {
@@ -529,6 +1146,38 @@ class CanvasManager {
                     return element;
                 }
             } else if (element.type === 'route' || element.type === 'block') {
+                // First check if click is near a route point for editing
+                if (element.type === 'route') {
+                    for (let j = 0; j < element.path.length; j++) {
+                        const pointDistance = Math.sqrt(
+                            Math.pow(x - element.path[j].x, 2) + Math.pow(y - element.path[j].y, 2)
+                        );
+                        if (pointDistance <= 8) { // Small radius for route points
+                            return {
+                                ...element,
+                                isRoutePoint: true,
+                                pointIndex: j
+                            };
+                        }
+                    }
+                }
+
+                // Check if click is near a block point for editing
+                if (element.type === 'block') {
+                    for (let j = 0; j < element.path.length; j++) {
+                        const pointDistance = Math.sqrt(
+                            Math.pow(x - element.path[j].x, 2) + Math.pow(y - element.path[j].y, 2)
+                        );
+                        if (pointDistance <= 8) { // Small radius for block points
+                            return {
+                                ...element,
+                                isBlockPoint: true,
+                                pointIndex: j
+                            };
+                        }
+                    }
+                }
+
                 // Check if click is near the path
                 for (let j = 0; j < element.path.length - 1; j++) {
                     const pointDistance = this.distanceToLine(
@@ -584,6 +1233,26 @@ class CanvasManager {
         this.elements.forEach(element => {
             this.drawElement(element);
         });
+
+        // Draw route preview if in route drawing mode
+        if (this.routeDrawingMode && this.activeRoute && this.previewPoint) {
+            this.drawRoutePreview();
+        }
+
+        // Draw block preview if in block drawing mode
+        if (this.blockDrawingMode && this.activeBlock && this.previewPoint) {
+            this.drawBlockPreview();
+        }
+
+        // Draw route editing preview if editing a route point
+        if (this.editingRoutePoint && this.editingRoute && this.previewPoint) {
+            this.drawRouteEditPreview();
+        }
+
+        // Draw block editing preview if editing a block point
+        if (this.editingBlockPoint && this.editingBlock && this.previewPoint) {
+            this.drawBlockEditPreview();
+        }
 
         // Highlight selected element
         if (this.selectedElement) {
@@ -706,6 +1375,227 @@ class CanvasManager {
                 route.path[route.path.length - 2],
                 route.path[route.path.length - 1]
             );
+        }
+    }
+
+    drawRoutePreview() {
+        if (!this.activeRoute || !this.previewPoint) return;
+
+        // Draw current route being constructed
+        if (this.activeRoute.path.length > 0) {
+            this.ctx.strokeStyle = this.activeRoute.color;
+            this.ctx.lineWidth = 3;
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+
+            // Draw existing path
+            if (this.activeRoute.path.length > 1) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.activeRoute.path[0].x, this.activeRoute.path[0].y);
+                for (let i = 1; i < this.activeRoute.path.length; i++) {
+                    this.ctx.lineTo(this.activeRoute.path[i].x, this.activeRoute.path[i].y);
+                }
+                this.ctx.stroke();
+            }
+
+            // Draw preview line from last point to mouse
+            const lastPoint = this.activeRoute.path[this.activeRoute.path.length - 1];
+            this.ctx.strokeStyle = this.activeRoute.color;
+            this.ctx.globalAlpha = 0.6; // Semi-transparent preview
+            this.ctx.setLineDash([5, 5]); // Dashed line for preview
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(lastPoint.x, lastPoint.y);
+            this.ctx.lineTo(this.previewPoint.x, this.previewPoint.y);
+            this.ctx.stroke();
+
+            // Draw preview arrow
+            this.ctx.globalAlpha = 0.8;
+            this.drawArrow(lastPoint, this.previewPoint);
+
+            // Reset line dash and alpha
+            this.ctx.setLineDash([]);
+            this.ctx.globalAlpha = 1.0;
+        }
+    }
+
+    drawRouteEditPreview() {
+        if (!this.editingRoute || !this.previewPoint || this.editingPointIndex < 0) return;
+
+        // Draw the route with the edited point in preview position
+        const route = this.editingRoute;
+
+        this.ctx.strokeStyle = route.color;
+        this.ctx.lineWidth = 3;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+
+        // Draw route with preview point
+        if (route.path.length > 1) {
+            this.ctx.globalAlpha = 0.7; // Semi-transparent for preview
+            this.ctx.setLineDash([3, 3]); // Dashed line for preview
+
+            this.ctx.beginPath();
+
+            // Draw to first point (or preview if editing first point)
+            const firstPoint = this.editingPointIndex === 0 ? this.previewPoint : route.path[0];
+            this.ctx.moveTo(firstPoint.x, firstPoint.y);
+
+            // Draw through all points, substituting preview point where editing
+            for (let i = 1; i < route.path.length; i++) {
+                const point = this.editingPointIndex === i ? this.previewPoint : route.path[i];
+                this.ctx.lineTo(point.x, point.y);
+            }
+
+            this.ctx.stroke();
+
+            // Draw preview arrow
+            if (route.path.length > 1) {
+                const secondToLast = this.editingPointIndex === route.path.length - 2 ?
+                    this.previewPoint : route.path[route.path.length - 2];
+                const last = this.editingPointIndex === route.path.length - 1 ?
+                    this.previewPoint : route.path[route.path.length - 1];
+
+                this.ctx.globalAlpha = 0.8;
+                this.drawArrow(secondToLast, last);
+            }
+
+            // Draw editing point indicator
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.setLineDash([]);
+            this.ctx.fillStyle = '#ff6600';
+            this.ctx.beginPath();
+            this.ctx.arc(this.previewPoint.x, this.previewPoint.y, 6, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+
+            // Reset settings
+            this.ctx.globalAlpha = 1.0;
+        }
+    }
+
+    drawBlockPreview() {
+        if (!this.activeBlock || !this.previewPoint) return;
+
+        // Draw current block being constructed
+        if (this.activeBlock.path.length > 0) {
+            this.ctx.strokeStyle = this.activeBlock.color;
+            this.ctx.lineWidth = 4;
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+
+            // Draw existing path
+            if (this.activeBlock.path.length > 1) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.activeBlock.path[0].x, this.activeBlock.path[0].y);
+                for (let i = 1; i < this.activeBlock.path.length; i++) {
+                    this.ctx.lineTo(this.activeBlock.path[i].x, this.activeBlock.path[i].y);
+                }
+                this.ctx.stroke();
+            }
+
+            // Draw preview line from last point to mouse
+            const lastPoint = this.activeBlock.path[this.activeBlock.path.length - 1];
+            this.ctx.strokeStyle = this.activeBlock.color;
+            this.ctx.globalAlpha = 0.6; // Semi-transparent preview
+            this.ctx.setLineDash([5, 5]); // Dashed line for preview
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(lastPoint.x, lastPoint.y);
+            this.ctx.lineTo(this.previewPoint.x, this.previewPoint.y);
+            this.ctx.stroke();
+
+            // Draw T-bar preview at the end point
+            this.ctx.globalAlpha = 0.8;
+            const angle = Math.atan2(this.previewPoint.y - lastPoint.y, this.previewPoint.x - lastPoint.x);
+            const perpAngle = angle + Math.PI / 2;
+            const tBarLength = 15;
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(
+                this.previewPoint.x - Math.cos(perpAngle) * tBarLength,
+                this.previewPoint.y - Math.sin(perpAngle) * tBarLength
+            );
+            this.ctx.lineTo(
+                this.previewPoint.x + Math.cos(perpAngle) * tBarLength,
+                this.previewPoint.y + Math.sin(perpAngle) * tBarLength
+            );
+            this.ctx.stroke();
+
+            // Reset line dash and alpha
+            this.ctx.setLineDash([]);
+            this.ctx.globalAlpha = 1.0;
+        }
+    }
+
+    drawBlockEditPreview() {
+        if (!this.editingBlock || !this.previewPoint || this.editingBlockPointIndex < 0) return;
+
+        // Draw the block with the edited point in preview position
+        const block = this.editingBlock;
+
+        this.ctx.strokeStyle = block.color;
+        this.ctx.lineWidth = 4;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+
+        // Draw block with preview point
+        if (block.path.length > 1) {
+            this.ctx.globalAlpha = 0.7; // Semi-transparent for preview
+            this.ctx.setLineDash([3, 3]); // Dashed line for preview
+
+            this.ctx.beginPath();
+
+            // Draw to first point (or preview if editing first point)
+            const firstPoint = this.editingBlockPointIndex === 0 ? this.previewPoint : block.path[0];
+            this.ctx.moveTo(firstPoint.x, firstPoint.y);
+
+            // Draw through all points, substituting preview point where editing
+            for (let i = 1; i < block.path.length; i++) {
+                const point = this.editingBlockPointIndex === i ? this.previewPoint : block.path[i];
+                this.ctx.lineTo(point.x, point.y);
+            }
+
+            this.ctx.stroke();
+
+            // Draw T-bars with preview
+            for (let i = 1; i < block.path.length; i++) {
+                const from = this.editingBlockPointIndex === i - 1 ? this.previewPoint : block.path[i - 1];
+                const to = this.editingBlockPointIndex === i ? this.previewPoint : block.path[i];
+
+                // Calculate perpendicular direction for T-bar
+                const angle = Math.atan2(to.y - from.y, to.x - from.x);
+                const perpAngle = angle + Math.PI / 2;
+                const tBarLength = 15;
+
+                // Draw T-bar at the end point
+                this.ctx.beginPath();
+                this.ctx.moveTo(
+                    to.x - Math.cos(perpAngle) * tBarLength,
+                    to.y - Math.sin(perpAngle) * tBarLength
+                );
+                this.ctx.lineTo(
+                    to.x + Math.cos(perpAngle) * tBarLength,
+                    to.y + Math.sin(perpAngle) * tBarLength
+                );
+                this.ctx.stroke();
+            }
+
+            // Draw editing point indicator
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.setLineDash([]);
+            this.ctx.fillStyle = '#ff6600';
+            this.ctx.beginPath();
+            this.ctx.arc(this.previewPoint.x, this.previewPoint.y, 6, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+
+            // Reset settings
+            this.ctx.globalAlpha = 1.0;
         }
     }
 
@@ -962,7 +1852,7 @@ class CanvasManager {
         this.actionMode = mode;
         // Visual feedback could be added here
         console.log(`Action mode set to: ${mode}`);
-        
+
         // Re-render to maintain selection highlight
         this.render();
     }

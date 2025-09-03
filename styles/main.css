@@ -1095,3 +1095,90 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--dark-gray);
 }
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(-50px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.show .modal-content {
+    transform: translateY(0);
+}
+
+.save-prompt-modal {
+    padding: 2rem;
+    text-align: center;
+}
+
+.save-prompt-modal h3 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.save-prompt-modal p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.modal-actions .btn {
+    justify-self: stretch;
+}
+
+@media (min-width: 480px) {
+    .modal-actions {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .modal-actions .btn {
+        flex: 0 1 auto;
+        min-width: 120px;
+    }
+}
+
+/* Make nav logo clickable */
+.nav-logo h2 {
+    transition: color 0.2s ease;
+}
+
+.nav-logo h2:hover {
+    color: var(--primary-color);
+}

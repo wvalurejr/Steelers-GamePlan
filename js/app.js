@@ -8,6 +8,8 @@ class FootballChartApp {
         this.currentColor = '#32CD32'; // Default to light green
         this.collisionAvoidance = true;
         this.snapToGrid = true; // Default snap to grid enabled
+        this.hasUnsavedChanges = false; // Track unsaved changes
+        this.lastSavedState = null; // Store last saved state for comparison
         this.init();
     }
 
@@ -23,18 +25,33 @@ class FootballChartApp {
         const navLinks = document.querySelectorAll('.nav-link');
         const hamburger = document.querySelector('.hamburger');
         const navMenu = document.querySelector('.nav-menu');
+        const navLogo = document.querySelector('.nav-logo h2');
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = link.getAttribute('data-page');
-                this.showPage(page);
+                this.navigateToPage(page);
                 this.updateNavigation(link);
 
                 // Close mobile menu
                 navMenu.classList.remove('active');
             });
         });
+
+        // Add click handler for Football Chart title
+        if (navLogo) {
+            navLogo.style.cursor = 'pointer';
+            navLogo.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.navigateToPage('home');
+                // Update navigation to show home as active
+                const homeLink = document.querySelector('.nav-link[data-page="home"]');
+                if (homeLink) {
+                    this.updateNavigation(homeLink);
+                }
+            });
+        }
 
         hamburger.addEventListener('click', () => {
             navMenu.classList.toggle('active');
@@ -130,6 +147,14 @@ class FootballChartApp {
         document.querySelectorAll('.color-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.selectColor(e.target.getAttribute('data-color'));
+            });
+        });
+
+        // Route/Block color selection
+        document.querySelectorAll('.route-color-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const color = e.target.getAttribute('data-color');
+                this.changeSelectedRouteBlockColor(color);
             });
         });
 
@@ -231,6 +256,87 @@ class FootballChartApp {
         }
     }
 
+    navigateToPage(pageId) {
+        // If navigating away from chart page, check for unsaved changes
+        if (this.currentPage === 'chart' && pageId !== 'chart') {
+            if (this.hasUnsavedChanges) {
+                this.showSavePrompt(pageId);
+                return;
+            }
+        }
+
+        // Navigate normally if no unsaved changes
+        this.showPage(pageId);
+    }
+
+    showSavePrompt(targetPage) {
+        const modal = this.createSavePromptModal(targetPage);
+        document.body.appendChild(modal);
+
+        // Show modal with animation
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+    }
+
+    createSavePromptModal(targetPage) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content save-prompt-modal">
+                <h3>Unsaved Changes</h3>
+                <p>You have unsaved changes to your chart. What would you like to do?</p>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" id="save-and-continue">Save & Continue</button>
+                    <button class="btn btn-secondary" id="save-new-and-continue">Save New & Continue</button>
+                    <button class="btn btn-outline" id="leave-without-saving">Leave Without Saving</button>
+                    <button class="btn btn-outline" id="cancel-navigation">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        // Add event listeners
+        modal.querySelector('#save-and-continue').addEventListener('click', () => {
+            this.saveCurrentPlay();
+            this.closeSavePrompt(modal);
+            this.showPage(targetPage);
+        });
+
+        modal.querySelector('#save-new-and-continue').addEventListener('click', () => {
+            this.saveAsNewPlay();
+            this.closeSavePrompt(modal);
+            this.showPage(targetPage);
+        });
+
+        modal.querySelector('#leave-without-saving').addEventListener('click', () => {
+            this.hasUnsavedChanges = false;
+            this.closeSavePrompt(modal);
+            this.showPage(targetPage);
+        });
+
+        modal.querySelector('#cancel-navigation').addEventListener('click', () => {
+            this.closeSavePrompt(modal);
+        });
+
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeSavePrompt(modal);
+            }
+        });
+
+        return modal;
+    }
+
+    closeSavePrompt(modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }, 300);
+    }
+
     updateNavigation(activeLink) {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
@@ -263,9 +369,9 @@ class FootballChartApp {
         if (window.canvasManager) {
             // Store current selection before changing mode
             const currentSelection = window.canvasManager.selectedElement;
-            
+
             window.canvasManager.setActionMode(actionMode);
-            
+
             // If there was a selection, update UI accordingly
             if (currentSelection) {
                 this.updateSelectionStatus(currentSelection);
@@ -322,6 +428,9 @@ class FootballChartApp {
         } else if (statusText) {
             this.updateActionModeUI(this.currentActionMode);
         }
+
+        // Update the route/block color section info
+        this.updateSelectedPositionInfo(selectedElement);
     }
 
     selectShape(shape) {
@@ -343,6 +452,60 @@ class FootballChartApp {
         if (window.canvasManager) {
             window.canvasManager.setColor(color);
         }
+    }
+
+    changeSelectedRouteBlockColor(color) {
+        if (!window.canvasManager || !window.canvasManager.selectedElement) {
+            this.showNotification('Please select a position first', 'warning');
+            return;
+        }
+
+        const selectedPosition = window.canvasManager.selectedElement;
+
+        // Find and update route for this position
+        const route = window.canvasManager.getRouteForPosition(selectedPosition);
+        if (route) {
+            window.canvasManager.changeRouteColor(route, color);
+        }
+
+        // Find and update block for this position
+        const block = window.canvasManager.getBlockForPosition(selectedPosition);
+        if (block) {
+            window.canvasManager.changeBlockColor(block, color);
+        }
+
+        if (route || block) {
+            this.showNotification(`${route ? 'Route' : ''}${route && block ? ' and ' : ''}${block ? 'Block' : ''} color updated!`, 'success');
+            this.updateSelectedPositionInfo(selectedPosition);
+        } else {
+            this.showNotification('No route or block found for this position', 'info');
+        }
+    }
+
+    updateSelectedPositionInfo(position) {
+        const infoElement = document.getElementById('selected-position-info');
+        if (!infoElement) return;
+
+        if (!position) {
+            infoElement.textContent = 'Select a position to change its route/block color';
+            return;
+        }
+
+        const route = window.canvasManager.getRouteForPosition(position);
+        const block = window.canvasManager.getBlockForPosition(position);
+
+        let info = `Selected: ${position.name || 'Position'}`;
+        if (route) {
+            info += ` (Route: ●)`;
+        }
+        if (block) {
+            info += ` (Block: ■)`;
+        }
+        if (!route && !block) {
+            info += ' (No route/block)';
+        }
+
+        infoElement.textContent = info;
     }
 
     loadDefaultLineup(lineupName) {
@@ -436,6 +599,30 @@ class FootballChartApp {
         this.refreshCustomLineupsList();
         this.updateActionModeVisibility(this.currentTool);
         this.updateActionModeUI(this.currentActionMode);
+
+        // Initialize change tracking
+        this.setupChangeTracking();
+        this.markAsSaved(window.canvasManager.getPlayData());
+    }
+
+    setupChangeTracking() {
+        if (!window.canvasManager) return;
+
+        // Override the render method to track changes
+        const originalRender = window.canvasManager.render.bind(window.canvasManager);
+        window.canvasManager.render = () => {
+            originalRender();
+            // Check for changes after each render
+            setTimeout(() => this.checkForChanges(), 10);
+        };
+
+        // Track changes on specific canvas events
+        const canvas = window.canvasManager.canvas;
+        if (canvas) {
+            canvas.addEventListener('mouseup', () => {
+                setTimeout(() => this.markAsChanged(), 10);
+            });
+        }
     }
 
     updateActiveColorButton(color) {
@@ -471,7 +658,59 @@ class FootballChartApp {
         };
 
         this.storePlay(play);
+        this.markAsSaved(playData);
         this.showNotification('Play saved successfully!', 'success');
+    }
+
+    saveAsNewPlay() {
+        if (!window.canvasManager) return;
+
+        const currentName = document.getElementById('play-name')?.value || 'Untitled Play';
+        const newName = `${currentName} (Copy)`;
+
+        // Temporarily update the name input
+        const nameInput = document.getElementById('play-name');
+        if (nameInput) {
+            nameInput.value = newName;
+        }
+
+        const playData = window.canvasManager.getPlayData();
+
+        const play = {
+            id: Date.now().toString(),
+            name: newName,
+            data: playData,
+            formation: this.detectFormation(playData),
+            tags: this.extractTags(newName),
+            created: new Date().toISOString(),
+            modified: new Date().toISOString()
+        };
+
+        this.storePlay(play);
+        this.markAsSaved(playData);
+        this.showNotification('Play saved as new copy!', 'success');
+    }
+
+    markAsSaved(playData) {
+        this.hasUnsavedChanges = false;
+        this.lastSavedState = JSON.stringify(playData);
+    }
+
+    markAsChanged() {
+        if (this.currentPage === 'chart') {
+            this.hasUnsavedChanges = true;
+        }
+    }
+
+    checkForChanges() {
+        if (this.currentPage !== 'chart' || !window.canvasManager) {
+            return;
+        }
+
+        const currentData = JSON.stringify(window.canvasManager.getPlayData());
+        if (this.lastSavedState && currentData !== this.lastSavedState) {
+            this.hasUnsavedChanges = true;
+        }
     }
 
     loadPlay() {
