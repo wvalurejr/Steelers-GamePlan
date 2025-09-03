@@ -756,26 +756,26 @@ class CanvasManager {
             this.ctx.strokeStyle = '#ffff00';
             this.ctx.lineWidth = 3;
             this.ctx.beginPath();
-            
+
             const radius = 22; // Match the actual position size
-            
+
             // Match the selection reticle to the position's shape with actual size
             switch (element.shape) {
                 case 'circle':
                     this.ctx.arc(element.x, element.y, radius, 0, 2 * Math.PI);
                     break;
-                    
+
                 case 'square':
                     this.ctx.rect(element.x - radius, element.y - radius, radius * 2, radius * 2);
                     break;
-                    
+
                 case 'triangle':
                     this.ctx.moveTo(element.x, element.y - radius);
                     this.ctx.lineTo(element.x - radius * 0.86, element.y + radius * 0.5);
                     this.ctx.lineTo(element.x + radius * 0.86, element.y + radius * 0.5);
                     this.ctx.closePath();
                     break;
-                    
+
                 case 'diamond':
                     this.ctx.moveTo(element.x, element.y - radius);
                     this.ctx.lineTo(element.x + radius, element.y);
@@ -783,27 +783,27 @@ class CanvasManager {
                     this.ctx.lineTo(element.x - radius, element.y);
                     this.ctx.closePath();
                     break;
-                    
+
                 case 'x':
                     this.ctx.moveTo(element.x - radius * 0.7, element.y - radius * 0.7);
                     this.ctx.lineTo(element.x + radius * 0.7, element.y + radius * 0.7);
                     this.ctx.moveTo(element.x + radius * 0.7, element.y - radius * 0.7);
                     this.ctx.lineTo(element.x - radius * 0.7, element.y + radius * 0.7);
                     break;
-                    
+
                 case 'line':
                     this.ctx.moveTo(element.x - radius, element.y);
                     this.ctx.lineTo(element.x + radius, element.y);
                     break;
-                    
+
                 default:
                     this.ctx.arc(element.x, element.y, radius, 0, 2 * Math.PI);
                     break;
             }
-            
+
             this.ctx.stroke();
         }
-    }    setTool(tool) {
+    } setTool(tool) {
         this.tool = tool;
         this.selectedElement = null;
         this.render();
@@ -962,6 +962,9 @@ class CanvasManager {
         this.actionMode = mode;
         // Visual feedback could be added here
         console.log(`Action mode set to: ${mode}`);
+        
+        // Re-render to maintain selection highlight
+        this.render();
     }
 
     getActionMode() {

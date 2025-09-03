@@ -261,11 +261,22 @@ class FootballChartApp {
         document.querySelector(`[data-action="${actionMode}"]`)?.classList.add('active');
 
         if (window.canvasManager) {
+            // Store current selection before changing mode
+            const currentSelection = window.canvasManager.selectedElement;
+            
             window.canvasManager.setActionMode(actionMode);
+            
+            // If there was a selection, update UI accordingly
+            if (currentSelection) {
+                this.updateSelectionStatus(currentSelection);
+            } else {
+                // Update UI feedback for the new action mode
+                this.updateActionModeUI(actionMode);
+            }
+        } else {
+            // Update UI feedback for the new action mode
+            this.updateActionModeUI(actionMode);
         }
-
-        // Update UI feedback
-        this.updateActionModeUI(actionMode);
     }
 
     setCollisionAvoidance(enabled) {
