@@ -7,6 +7,9 @@ class CanvasManager {
         this.selectedElement = null;
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
+        this.potentialDrag = false;
+        this.dragThreshold = 5; // pixels
+        this.dragStartPosition = { x: 0, y: 0 };
         this.tool = 'select';
         this.actionMode = 'move'; // 'move', 'route', 'block'
         this.shape = 'circle';
@@ -218,6 +221,19 @@ class CanvasManager {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        // Check if we should start dragging based on threshold
+        if (this.potentialDrag && this.selectedElement && this.actionMode === 'move' && !this.isDragging) {
+            const deltaX = x - this.dragStartPosition.x;
+            const deltaY = y - this.dragStartPosition.y;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            if (distance > this.dragThreshold) {
+                // Start actual dragging
+                this.isDragging = true;
+                this.potentialDrag = false;
+            }
+        }
+
         if (this.isDragging && this.selectedElement && this.actionMode === 'move') {
             let newX = x - this.dragOffset.x;
             let newY = y - this.dragOffset.y;
@@ -357,6 +373,7 @@ class CanvasManager {
         }
 
         this.isDragging = false;
+        this.potentialDrag = false;
     }
 
     handleClick(e) {
@@ -403,6 +420,7 @@ class CanvasManager {
         // Deselect current position
         this.selectedElement = null;
         this.isDragging = false;
+        this.potentialDrag = false;
         this.routeDrawingMode = false;
         this.blockDrawingMode = false;
         this.previewPoint = null;
@@ -502,7 +520,10 @@ class CanvasManager {
 
             switch (this.actionMode) {
                 case 'move':
-                    this.isDragging = true;
+                    // Set up potential drag, but don't start dragging yet
+                    this.potentialDrag = true;
+                    this.dragStartPosition.x = x;
+                    this.dragStartPosition.y = y;
                     this.dragOffset.x = x - element.x;
                     this.dragOffset.y = y - element.y;
                     break;

@@ -411,7 +411,9 @@ body {
 }
 
 .chart-title-section.compact {
-    flex: 0 0 auto;
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    margin-right: 15px;
 }
 
 .play-name-input {
@@ -422,12 +424,13 @@ body {
     padding: 8px 12px;
     border-radius: var(--border-radius);
     background: var(--bg-secondary);
-    width: 200px;
+    width: 100%;
+    min-width: 120px;
+    max-width: 400px;
     color: var(--text-primary);
 }
 
 .play-name-input.compact {
-    width: 180px;
     font-size: 0.9rem;
 }
 
