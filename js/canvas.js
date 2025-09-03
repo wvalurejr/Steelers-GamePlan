@@ -325,6 +325,30 @@ class CanvasManager {
             return;
         }
 
+        // If we're dragging a position in move mode, drop it at the current location
+        if (this.isDragging && this.selectedElement && this.actionMode === 'move') {
+            let newX = x - this.dragOffset.x;
+            let newY = y - this.dragOffset.y;
+
+            // Apply snapping if enabled
+            if (this.snapToGrid) {
+                const snapped = this.snapCoordinates(newX, newY);
+                newX = snapped.x;
+                newY = snapped.y;
+            }
+
+            // Final position update
+            this.selectedElement.x = newX;
+            this.selectedElement.y = newY;
+
+            // Mark as changed for save tracking
+            if (window.footballApp && window.footballApp.markAsChanged) {
+                window.footballApp.markAsChanged();
+            }
+
+            this.render();
+        }
+
         if (this.isDrawing && (this.actionMode === 'route' || this.actionMode === 'block' || this.tool === 'route' || this.tool === 'block')) {
             // Don't finish immediately - allow for multi-segment drawing
             // Double-click or right-click will finish the path
