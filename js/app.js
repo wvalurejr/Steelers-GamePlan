@@ -5,7 +5,7 @@ class FootballChartApp {
         this.currentTool = 'select';
         this.currentActionMode = 'move'; // 'move', 'route', 'block'
         this.currentShape = 'circle';
-        this.currentColor = '#000000';
+        this.currentColor = '#32CD32'; // Default to light green
         this.collisionAvoidance = true;
         this.init();
     }
@@ -13,6 +13,7 @@ class FootballChartApp {
     init() {
         this.setupNavigation();
         this.setupEventListeners();
+        this.setupThemeToggle();
         this.loadStoredPlays();
         this.showPage('home');
     }
@@ -42,6 +43,32 @@ class FootballChartApp {
         document.addEventListener('click', (e) => {
             if (!hamburger.contains(e.target) && !navMenu.contains(e.target)) {
                 navMenu.classList.remove('active');
+            }
+        });
+    }
+
+    setupThemeToggle() {
+        const themeToggle = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        
+        // Set initial theme
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+        
+        // Set default highlight color to light green
+        this.currentColor = '#32CD32';
+        
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            
+            // Update canvas if it exists
+            if (window.canvasManager) {
+                window.canvasManager.render();
             }
         });
     }
@@ -289,10 +316,7 @@ class FootballChartApp {
 
     selectColor(color) {
         this.currentColor = color;
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-color="${color}"]`).classList.add('active');
+        this.updateActiveColorButton(color);
 
         if (window.canvasManager) {
             window.canvasManager.setColor(color);
@@ -382,9 +406,23 @@ class FootballChartApp {
         window.canvasManager.setCollisionAvoidance(this.collisionAvoidance);
         window.canvasManager.setShape(this.currentShape);
         window.canvasManager.setColor(this.currentColor);
+        
+        // Set the active color button to light green by default
+        this.updateActiveColorButton(this.currentColor);
+        
         this.refreshCustomLineupsList();
         this.updateActionModeVisibility(this.currentTool);
         this.updateActionModeUI(this.currentActionMode);
+    }
+
+    updateActiveColorButton(color) {
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        const colorBtn = document.querySelector(`[data-color="${color}"]`);
+        if (colorBtn) {
+            colorBtn.classList.add('active');
+        }
     }
 
     initializeLibrary() {

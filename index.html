@@ -27,6 +27,9 @@
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-page="library">Library</a>
                 </li>
+                <li class="nav-item">
+                    <button class="theme-toggle" id="theme-toggle">🌙</button>
+                </li>
             </ul>
             <div class="hamburger">
                 <span class="bar"></span>
@@ -83,8 +86,8 @@
         <div id="chart-page" class="page">
             <div class="chart-container">
                 <div class="chart-header">
-                    <div class="chart-title-section">
-                        <input type="text" id="play-name" placeholder="Enter play name..." class="play-name-input">
+                    <div class="chart-title-section compact">
+                        <input type="text" id="play-name" placeholder="Play name..." class="play-name-input compact">
                     </div>
                     <div class="chart-actions">
                         <button class="btn btn-secondary" id="save-play">Save Play</button>
@@ -93,85 +96,74 @@
                     </div>
                 </div>
 
-                <div class="chart-workspace">
-                    <div class="toolbar">
-                        <div class="tool-section">
-                            <h4>Tools</h4>
-                            <button class="tool-btn active" data-tool="select">Select</button>
-                            <button class="tool-btn" data-tool="position">Position</button>
-                            <button class="tool-btn" data-tool="route">Route</button>
-                            <button class="tool-btn" data-tool="block">Block</button>
-                        </div>
-
-                        <div class="tool-section" id="action-controls">
-                            <h4>Action Mode</h4>
-                            <button class="action-btn active" data-action="move">Move</button>
-                            <button class="action-btn" data-action="route">Route</button>
-                            <button class="action-btn" data-action="block">Block</button>
-                            <div class="action-status" id="action-status">Click and drag to move positions</div>
-                            <div class="action-options">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="collision-toggle" checked>
-                                    Avoid collisions
-                                </label>
-                                <button class="btn btn-xs" id="finish-route">Finish Route</button>
-                                <button class="btn btn-xs" id="remove-segment">Remove Segment</button>
-                            </div>
-                        </div>
-
-                        <div class="tool-section">
-                            <h4>Shapes</h4>
-                            <div class="shape-grid">
-                                <button class="shape-btn" data-shape="circle">○</button>
-                                <button class="shape-btn" data-shape="square">□</button>
-                                <button class="shape-btn" data-shape="triangle">△</button>
-                                <button class="shape-btn" data-shape="diamond">◇</button>
-                                <button class="shape-btn" data-shape="x">✕</button>
-                                <button class="shape-btn" data-shape="line">—</button>
-                            </div>
-                        </div>
-
-                        <div class="tool-section">
-                            <h4>Colors</h4>
-                            <div class="color-grid">
-                                <button class="color-btn" data-color="#000000"
-                                    style="background-color: #000000;"></button>
-                                <button class="color-btn" data-color="#FF6B35"
-                                    style="background-color: #FF6B35;"></button>
-                                <button class="color-btn" data-color="#FFFFFF"
-                                    style="background-color: #FFFFFF; border: 1px solid #ccc;"></button>
-                                <button class="color-btn" data-color="#007BFF"
-                                    style="background-color: #007BFF;"></button>
-                                <button class="color-btn" data-color="#28A745"
-                                    style="background-color: #28A745;"></button>
-                                <button class="color-btn" data-color="#DC3545"
-                                    style="background-color: #DC3545;"></button>
-                            </div>
-                        </div>
-
-                        <div class="tool-section">
-                            <h4>Default Lineups</h4>
-                            <button class="lineup-btn" data-lineup="linemen-only">Linemen Only</button>
-                            <button class="lineup-btn" data-lineup="i-formation">I-Formation</button>
+                <!-- Lineups Section - Now at top -->
+                <div class="lineups-header">
+                    <div class="lineups-section">
+                        <h4>Lineups</h4>
+                        <div class="lineup-buttons">
+                            <button class="lineup-btn" data-lineup="linemen-only">Linemen</button>
+                            <button class="lineup-btn" data-lineup="i-formation">I-Form</button>
                             <button class="lineup-btn" data-lineup="shotgun">Shotgun</button>
                             <button class="lineup-btn" data-lineup="pistol">Pistol</button>
                             <button class="lineup-btn" data-lineup="wildcat">Wildcat</button>
                             <button class="lineup-btn" data-lineup="goal-line">Goal Line</button>
                         </div>
-
-                        <div class="tool-section">
-                            <h4>Custom Lineups</h4>
-                            <input type="text" id="lineup-name" placeholder="Lineup name...">
-                            <button class="btn btn-small" id="save-lineup">Save Lineup</button>
+                        <div class="custom-lineup">
+                            <input type="text" id="lineup-name" placeholder="Custom lineup...">
+                            <button class="btn btn-xs" id="save-lineup">Save</button>
                             <div id="saved-lineups" class="saved-lineups"></div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="tool-section">
+                <div class="chart-workspace">
+                    <div class="toolbar">
+                        <div class="tool-section compact">
+                            <h4>Action Mode</h4>
+                            <div class="action-buttons">
+                                <button class="action-btn active" data-action="move">Move</button>
+                                <button class="action-btn" data-action="route">Route</button>
+                                <button class="action-btn" data-action="block">Block</button>
+                            </div>
+                            <div class="action-status" id="action-status">Click positions to select and modify</div>
+                            <div class="action-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="collision-toggle" checked>
+                                    Avoid collisions
+                                </label>
+                                <button class="btn btn-xs" id="finish-route">Finish</button>
+                                <button class="btn btn-xs" id="remove-segment">Remove</button>
+                            </div>
+                        </div>
+
+                        <div class="tool-section compact">
+                            <h4>Shapes & Colors</h4>
+                            <div class="shape-color-grid">
+                                <div class="shapes-row">
+                                    <button class="shape-btn" data-shape="circle">○</button>
+                                    <button class="shape-btn" data-shape="square">□</button>
+                                    <button class="shape-btn" data-shape="triangle">△</button>
+                                    <button class="shape-btn" data-shape="diamond">◇</button>
+                                    <button class="shape-btn" data-shape="x">✕</button>
+                                    <button class="shape-btn" data-shape="line">—</button>
+                                </div>
+                                <div class="colors-row">
+                                    <button class="color-btn" data-color="#000000" style="background-color: #000000;"></button>
+                                    <button class="color-btn active" data-color="#32CD32" style="background-color: #32CD32;"></button>
+                                    <button class="color-btn" data-color="#FFFFFF" style="background-color: #FFFFFF; border: 1px solid #ccc;"></button>
+                                    <button class="color-btn" data-color="#007BFF" style="background-color: #007BFF;"></button>
+                                    <button class="color-btn" data-color="#FF6B35" style="background-color: #FF6B35;"></button>
+                                    <button class="color-btn" data-color="#DC3545" style="background-color: #DC3545;"></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tool-section compact">
                             <h4>Properties</h4>
-                            <label>Position Name:</label>
-                            <input type="text" id="position-name" placeholder="e.g., QB, RB, WR1">
-                            <label>Player Name:</label>
-                            <input type="text" id="player-name" placeholder="e.g., Smith">
+                            <div class="properties-row">
+                                <input type="text" id="position-name" placeholder="Position" class="property-input">
+                                <input type="text" id="player-name" placeholder="Player" class="property-input">
+                            </div>
                         </div>
                     </div>
 
