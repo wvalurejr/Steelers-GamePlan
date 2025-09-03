@@ -7,6 +7,7 @@ class FootballChartApp {
         this.currentShape = 'circle';
         this.currentColor = '#32CD32'; // Default to light green
         this.collisionAvoidance = true;
+        this.snapToGrid = true; // Default snap to grid enabled
         this.init();
     }
 
@@ -49,31 +50,29 @@ class FootballChartApp {
 
     setupThemeToggle() {
         const themeToggle = document.getElementById('theme-toggle');
-        const currentTheme = localStorage.getItem('theme') || 'light';
-
+        const currentTheme = localStorage.getItem('theme') || 'dark'; // Default to dark theme
+        
         // Set initial theme
         document.documentElement.setAttribute('data-theme', currentTheme);
         themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-
+        
         // Set default highlight color to light green
         this.currentColor = '#32CD32';
-
+        
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
+            
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-
+            
             // Update canvas if it exists
             if (window.canvasManager) {
                 window.canvasManager.render();
             }
         });
-    }
-
-    setupEventListeners() {
+    }    setupEventListeners() {
         // Hero action buttons
         document.querySelectorAll('[data-action="new-chart"]').forEach(btn => {
             btn.addEventListener('click', () => this.showPage('chart'));
@@ -100,6 +99,11 @@ class FootballChartApp {
         // Collision avoidance toggle
         document.getElementById('collision-toggle')?.addEventListener('change', (e) => {
             this.setCollisionAvoidance(e.target.checked);
+        });
+
+        // Snap to grid toggle
+        document.getElementById('snap-toggle')?.addEventListener('change', (e) => {
+            this.setSnapToGrid(e.target.checked);
         });
 
         // Route control buttons
@@ -271,6 +275,13 @@ class FootballChartApp {
         }
     }
 
+    setSnapToGrid(enabled) {
+        this.snapToGrid = enabled;
+        if (window.canvasManager) {
+            window.canvasManager.setSnapToGrid(enabled);
+        }
+    }
+
     updateActionModeVisibility(tool) {
         const actionControls = document.getElementById('action-controls');
         if (actionControls) {
@@ -404,6 +415,7 @@ class FootballChartApp {
         window.canvasManager.setTool(this.currentTool);
         window.canvasManager.setActionMode(this.currentActionMode);
         window.canvasManager.setCollisionAvoidance(this.collisionAvoidance);
+        window.canvasManager.setSnapToGrid(this.snapToGrid);
         window.canvasManager.setShape(this.currentShape);
         window.canvasManager.setColor(this.currentColor);
 

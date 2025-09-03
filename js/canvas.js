@@ -17,6 +17,7 @@ class CanvasManager {
         this.currentPath = [];
         this.activeRoute = null; // For multi-segment routes
         this.avoidCollisions = true; // Default collision avoidance
+        this.snapToGrid = true; // Default snap to grid lines
 
         this.init();
     }
@@ -204,8 +205,18 @@ class CanvasManager {
         const y = e.clientY - rect.top;
 
         if (this.isDragging && this.selectedElement && this.actionMode === 'move') {
-            this.selectedElement.x = x - this.dragOffset.x;
-            this.selectedElement.y = y - this.dragOffset.y;
+            let newX = x - this.dragOffset.x;
+            let newY = y - this.dragOffset.y;
+            
+            // Apply snapping if enabled
+            if (this.snapToGrid) {
+                const snapped = this.snapCoordinates(newX, newY);
+                newX = snapped.x;
+                newY = snapped.y;
+            }
+            
+            this.selectedElement.x = newX;
+            this.selectedElement.y = newY;
             this.render();
         } else if (this.isDrawing) {
             if (this.actionMode === 'route' || this.actionMode === 'block' || this.tool === 'route' || this.tool === 'block') {
@@ -745,7 +756,52 @@ class CanvasManager {
             this.ctx.strokeStyle = '#ffff00';
             this.ctx.lineWidth = 3;
             this.ctx.beginPath();
-            this.ctx.arc(element.x, element.y, 20, 0, 2 * Math.PI);
+            
+            const size = 20;
+            const halfSize = size / 2;
+            
+            // Match the selection reticle to the position's shape
+            switch (element.shape) {
+                case 'circle':
+                    this.ctx.arc(element.x, element.y, size, 0, 2 * Math.PI);
+                    break;
+                    
+                case 'square':
+                    this.ctx.rect(element.x - halfSize, element.y - halfSize, size, size);
+                    break;
+                    
+                case 'triangle':
+                    this.ctx.moveTo(element.x, element.y - halfSize);
+                    this.ctx.lineTo(element.x - halfSize, element.y + halfSize);
+                    this.ctx.lineTo(element.x + halfSize, element.y + halfSize);
+                    this.ctx.closePath();
+                    break;
+                    
+                case 'diamond':
+                    this.ctx.moveTo(element.x, element.y - halfSize);
+                    this.ctx.lineTo(element.x + halfSize, element.y);
+                    this.ctx.lineTo(element.x, element.y + halfSize);
+                    this.ctx.lineTo(element.x - halfSize, element.y);
+                    this.ctx.closePath();
+                    break;
+                    
+                case 'x':
+                    this.ctx.moveTo(element.x - halfSize, element.y - halfSize);
+                    this.ctx.lineTo(element.x + halfSize, element.y + halfSize);
+                    this.ctx.moveTo(element.x + halfSize, element.y - halfSize);
+                    this.ctx.lineTo(element.x - halfSize, element.y + halfSize);
+                    break;
+                    
+                case 'line':
+                    this.ctx.moveTo(element.x - halfSize, element.y);
+                    this.ctx.lineTo(element.x + halfSize, element.y);
+                    break;
+                    
+                default:
+                    this.ctx.arc(element.x, element.y, size, 0, 2 * Math.PI);
+                    break;
+            }
+            
             this.ctx.stroke();
         }
     }
@@ -923,6 +979,34 @@ class CanvasManager {
 
     getCollisionAvoidance() {
         return this.avoidCollisions;
+    }
+
+    // Snap to grid control
+    setSnapToGrid(enabled) {
+        this.snapToGrid = enabled;
+        console.log(`Snap to grid: ${enabled ? 'enabled' : 'disabled'}`);
+    }
+
+    getSnapToGrid() {
+        return this.snapToGrid;
+    }
+
+    // Snap coordinates to nearest grid line (yard lines, half-yard, quarter-yard)
+    snapCoordinates(x, y) {
+        if (!this.snapToGrid) return { x, y };
+
+        const yardSpacing = this.canvas.height / 30; // 30 yards total (15 above + 15 below center)
+        const halfYardSpacing = yardSpacing / 2;
+        const quarterYardSpacing = yardSpacing / 4;
+
+        // Snap to nearest quarter-yard line first, then half-yard, then full yard
+        const snappedY = Math.round(y / quarterYardSpacing) * quarterYardSpacing;
+        
+        // For horizontal snapping, use hash marks spacing
+        const hashSpacing = this.canvas.width / 53.3; // 53.3 yards field width
+        const snappedX = Math.round(x / hashSpacing) * hashSpacing;
+
+        return { x: snappedX, y: snappedY };
     }
 
     // Route segment management

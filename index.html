@@ -96,26 +96,34 @@
                     </div>
                 </div>
 
-                <!-- Lineups Section - Compact horizontal layout -->
-                <div class="lineups-header compact">
-                    <h5>Lineups:</h5>
-                    <div class="lineup-buttons">
-                        <button class="lineup-btn mini" data-lineup="linemen-only">Linemen</button>
-                        <button class="lineup-btn mini" data-lineup="i-formation">I-Form</button>
-                        <button class="lineup-btn mini" data-lineup="shotgun">Shotgun</button>
-                        <button class="lineup-btn mini" data-lineup="pistol">Pistol</button>
-                        <button class="lineup-btn mini" data-lineup="wildcat">Wildcat</button>
-                        <button class="lineup-btn mini" data-lineup="goal-line">Goal Line</button>
-                    </div>
-                    <div class="custom-lineup mini">
-                        <input type="text" id="lineup-name" placeholder="Custom...">
-                        <button class="btn btn-xs" id="save-lineup">+</button>
-                    </div>
-                    <div id="saved-lineups" class="saved-lineups inline"></div>
-                </div>
-
                 <div class="chart-workspace">
                     <div class="toolbar">
+                        <!-- Lineups Section - Now in left column -->
+                        <div class="tool-section compact">
+                            <h4>Lineups</h4>
+                            <div class="lineup-grid">
+                                <button class="lineup-btn mini" data-lineup="linemen-only">Linemen</button>
+                                <button class="lineup-btn mini" data-lineup="i-formation">I-Form</button>
+                                <button class="lineup-btn mini" data-lineup="shotgun">Shotgun</button>
+                                <button class="lineup-btn mini" data-lineup="pistol">Pistol</button>
+                                <button class="lineup-btn mini" data-lineup="wildcat">Wildcat</button>
+                                <button class="lineup-btn mini" data-lineup="goal-line">Goal Line</button>
+                            </div>
+                            <div class="custom-lineup vertical">
+                                <input type="text" id="lineup-name" placeholder="Custom lineup">
+                                <button class="btn btn-xs" id="save-lineup">Save</button>
+                            </div>
+                            <div id="saved-lineups" class="saved-lineups"></div>
+                        </div>
+
+                        <div class="tool-section compact">
+                            <h4>Snap Options</h4>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="snap-toggle" checked>
+                                Snap to grid lines
+                            </label>
+                        </div>
+
                         <div class="tool-section compact">
                             <h4>Action Mode</h4>
                             <div class="action-buttons">
