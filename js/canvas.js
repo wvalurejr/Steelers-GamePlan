@@ -226,7 +226,7 @@ class CanvasManager {
             const deltaX = x - this.dragStartPosition.x;
             const deltaY = y - this.dragStartPosition.y;
             const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            
+
             if (distance > this.dragThreshold) {
                 // Start actual dragging
                 this.isDragging = true;
@@ -234,6 +234,7 @@ class CanvasManager {
             }
         }
 
+        // Only update position if we're actually dragging (not just potential drag)
         if (this.isDragging && this.selectedElement && this.actionMode === 'move') {
             let newX = x - this.dragOffset.x;
             let newY = y - this.dragOffset.y;
@@ -457,21 +458,6 @@ class CanvasManager {
     handleTouchEnd(e) {
         const mouseEvent = new MouseEvent('mouseup', {});
         this.canvas.dispatchEvent(mouseEvent);
-    }
-
-    handleSelect(x, y) {
-        const element = this.getElementAt(x, y);
-
-        if (element) {
-            this.selectedElement = element;
-            this.isDragging = true;
-            this.dragOffset.x = x - element.x;
-            this.dragOffset.y = y - element.y;
-        } else {
-            this.selectedElement = null;
-        }
-
-        this.render();
     }
 
     // New method to handle selection with different action modes

@@ -412,7 +412,8 @@ body {
 
 .chart-title-section.compact {
     flex: 1;
-    min-width: 0; /* Allow shrinking */
+    min-width: 0;
+    /* Allow shrinking */
     margin-right: 15px;
 }
 
