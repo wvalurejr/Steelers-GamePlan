@@ -10,7 +10,8 @@
     --danger: #DC3545;
     --warning: #FFC107;
     --info: #17A2B8;
-    --highlight-color: #32CD32; /* Default light green highlight */
+    --highlight-color: #32CD32;
+    /* Default light green highlight */
 
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --border-radius: 8px;
@@ -19,7 +20,7 @@
 
     --navbar-height: 60px;
     --toolbar-width: 280px;
-    
+
     /* Background colors */
     --bg-primary: #FFFFFF;
     --bg-secondary: #F8F9FA;
@@ -37,8 +38,9 @@
     --light-gray: #2D2D2D;
     --medium-gray: #404040;
     --dark-gray: #CCCCCC;
-    --highlight-color: #32CD32; /* Same light green for dark theme */
-    
+    --highlight-color: #32CD32;
+    /* Same light green for dark theme */
+
     --bg-primary: #1A1A1A;
     --bg-secondary: #2D2D2D;
     --bg-tertiary: #404040;
@@ -114,12 +116,21 @@ body {
 }
 
 .btn-xs {
-    padding: 4px 8px;
-    font-size: 10px;
+    padding: 3px 6px;
+    font-size: 9px;
     border: 1px solid var(--border-color);
     background: var(--bg-secondary);
     color: var(--text-primary);
     border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    min-width: 20px;
+}
+
+.btn-xs:hover {
+    background: var(--highlight-color);
+    color: var(--white);
+    border-color: var(--highlight-color);
 }
 
 .btn-danger {
@@ -425,38 +436,53 @@ body {
     background: var(--bg-primary);
 }
 
-/* Lineups Header Styles */
+/* Lineups Header Styles - Compact */
 .lineups-header {
-    margin-bottom: 15px;
-    padding: 15px;
+    margin-bottom: 10px;
+    padding: 8px 12px;
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
-.lineups-section h4 {
+.lineups-header.compact {
+    padding: 6px 10px;
+    margin-bottom: 8px;
+}
+
+.lineups-header h5 {
     color: var(--text-primary);
-    margin-bottom: 10px;
-    font-size: 0.9rem;
+    margin: 0;
+    font-size: 0.8rem;
     font-weight: 600;
+    flex-shrink: 0;
 }
 
 .lineup-buttons {
     display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 4px;
     flex-wrap: wrap;
 }
 
 .lineup-btn {
-    padding: 6px 12px;
+    padding: 4px 8px;
     border: 1px solid var(--border-color);
     background: var(--bg-primary);
     color: var(--text-primary);
     border-radius: var(--border-radius);
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     transition: var(--transition);
+    white-space: nowrap;
+}
+
+.lineup-btn.mini {
+    padding: 3px 6px;
+    font-size: 0.65rem;
 }
 
 .lineup-btn:hover,
@@ -468,18 +494,33 @@ body {
 
 .custom-lineup {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     align-items: center;
 }
 
+.custom-lineup.mini {
+    gap: 3px;
+}
+
 .custom-lineup input {
-    flex: 1;
-    padding: 6px 8px;
+    width: 60px;
+    padding: 3px 6px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     background: var(--bg-primary);
     color: var(--text-primary);
-    font-size: 0.8rem;
+    font-size: 0.65rem;
+}
+
+.saved-lineups.inline {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+}
+
+.saved-lineups.inline .lineup-btn {
+    padding: 2px 5px;
+    font-size: 0.6rem;
 }
 
 .chart-actions {
@@ -581,7 +622,8 @@ body {
     gap: 8px;
 }
 
-.shapes-row, .colors-row {
+.shapes-row,
+.colors-row {
     display: flex;
     gap: 5px;
     justify-content: space-between;

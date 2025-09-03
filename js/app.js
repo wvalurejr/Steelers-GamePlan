@@ -50,22 +50,22 @@ class FootballChartApp {
     setupThemeToggle() {
         const themeToggle = document.getElementById('theme-toggle');
         const currentTheme = localStorage.getItem('theme') || 'light';
-        
+
         // Set initial theme
         document.documentElement.setAttribute('data-theme', currentTheme);
         themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-        
+
         // Set default highlight color to light green
         this.currentColor = '#32CD32';
-        
+
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
+
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-            
+
             // Update canvas if it exists
             if (window.canvasManager) {
                 window.canvasManager.render();
@@ -406,10 +406,10 @@ class FootballChartApp {
         window.canvasManager.setCollisionAvoidance(this.collisionAvoidance);
         window.canvasManager.setShape(this.currentShape);
         window.canvasManager.setColor(this.currentColor);
-        
+
         // Set the active color button to light green by default
         this.updateActiveColorButton(this.currentColor);
-        
+
         this.refreshCustomLineupsList();
         this.updateActionModeVisibility(this.currentTool);
         this.updateActionModeUI(this.currentActionMode);

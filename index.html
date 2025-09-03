@@ -96,24 +96,22 @@
                     </div>
                 </div>
 
-                <!-- Lineups Section - Now at top -->
-                <div class="lineups-header">
-                    <div class="lineups-section">
-                        <h4>Lineups</h4>
-                        <div class="lineup-buttons">
-                            <button class="lineup-btn" data-lineup="linemen-only">Linemen</button>
-                            <button class="lineup-btn" data-lineup="i-formation">I-Form</button>
-                            <button class="lineup-btn" data-lineup="shotgun">Shotgun</button>
-                            <button class="lineup-btn" data-lineup="pistol">Pistol</button>
-                            <button class="lineup-btn" data-lineup="wildcat">Wildcat</button>
-                            <button class="lineup-btn" data-lineup="goal-line">Goal Line</button>
-                        </div>
-                        <div class="custom-lineup">
-                            <input type="text" id="lineup-name" placeholder="Custom lineup...">
-                            <button class="btn btn-xs" id="save-lineup">Save</button>
-                            <div id="saved-lineups" class="saved-lineups"></div>
-                        </div>
+                <!-- Lineups Section - Compact horizontal layout -->
+                <div class="lineups-header compact">
+                    <h5>Lineups:</h5>
+                    <div class="lineup-buttons">
+                        <button class="lineup-btn mini" data-lineup="linemen-only">Linemen</button>
+                        <button class="lineup-btn mini" data-lineup="i-formation">I-Form</button>
+                        <button class="lineup-btn mini" data-lineup="shotgun">Shotgun</button>
+                        <button class="lineup-btn mini" data-lineup="pistol">Pistol</button>
+                        <button class="lineup-btn mini" data-lineup="wildcat">Wildcat</button>
+                        <button class="lineup-btn mini" data-lineup="goal-line">Goal Line</button>
                     </div>
+                    <div class="custom-lineup mini">
+                        <input type="text" id="lineup-name" placeholder="Custom...">
+                        <button class="btn btn-xs" id="save-lineup">+</button>
+                    </div>
+                    <div id="saved-lineups" class="saved-lineups inline"></div>
                 </div>
 
                 <div class="chart-workspace">
@@ -148,12 +146,18 @@
                                     <button class="shape-btn" data-shape="line">—</button>
                                 </div>
                                 <div class="colors-row">
-                                    <button class="color-btn" data-color="#000000" style="background-color: #000000;"></button>
-                                    <button class="color-btn active" data-color="#32CD32" style="background-color: #32CD32;"></button>
-                                    <button class="color-btn" data-color="#FFFFFF" style="background-color: #FFFFFF; border: 1px solid #ccc;"></button>
-                                    <button class="color-btn" data-color="#007BFF" style="background-color: #007BFF;"></button>
-                                    <button class="color-btn" data-color="#FF6B35" style="background-color: #FF6B35;"></button>
-                                    <button class="color-btn" data-color="#DC3545" style="background-color: #DC3545;"></button>
+                                    <button class="color-btn" data-color="#000000"
+                                        style="background-color: #000000;"></button>
+                                    <button class="color-btn active" data-color="#32CD32"
+                                        style="background-color: #32CD32;"></button>
+                                    <button class="color-btn" data-color="#FFFFFF"
+                                        style="background-color: #FFFFFF; border: 1px solid #ccc;"></button>
+                                    <button class="color-btn" data-color="#007BFF"
+                                        style="background-color: #007BFF;"></button>
+                                    <button class="color-btn" data-color="#FF6B35"
+                                        style="background-color: #FF6B35;"></button>
+                                    <button class="color-btn" data-color="#DC3545"
+                                        style="background-color: #DC3545;"></button>
                                 </div>
                             </div>
                         </div>
