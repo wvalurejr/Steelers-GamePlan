@@ -1,7 +1,7 @@
 // Main Application Controller
 class FootballChartApp {
     constructor() {
-        this.currentPage = 'chart';
+        this.currentPage = 'home';
         this.currentTool = 'select';
         this.currentActionMode = 'move'; // 'move', 'route', 'block'
         this.currentShape = 'circle';
@@ -18,7 +18,7 @@ class FootballChartApp {
         this.setupEventListeners();
         this.setupThemeToggle();
         this.loadStoredPlays();
-        this.showPage('chart');
+        this.showPage('home');
     }
 
     setupNavigation() {
@@ -44,11 +44,11 @@ class FootballChartApp {
             navLogo.style.cursor = 'pointer';
             navLogo.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.navigateToPage('chart');
-                // Update navigation to show chart as active
-                const chartLink = document.querySelector('.nav-link[data-page="chart"]');
-                if (chartLink) {
-                    this.updateNavigation(chartLink);
+                this.navigateToPage('home');
+                // Update navigation to show home as active
+                const homeLink = document.querySelector('.nav-link[data-page="home"]');
+                if (homeLink) {
+                    this.updateNavigation(homeLink);
                 }
             });
         }

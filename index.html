@@ -19,7 +19,10 @@
             </div>
             <ul class="nav-menu">
                 <li class="nav-item">
-                    <a href="#" class="nav-link active" data-page="chart">📊 Chart</a>
+                    <a href="#" class="nav-link active" data-page="home">🏠 Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="chart">📊 Chart</a>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-page="library">📚 Library</a>
@@ -37,19 +40,51 @@
     </nav>
 
     <main class="main-content">
-        <!-- Welcome Banner -->
-        <div class="welcome-banner">
-            <div class="container">
-                <div class="welcome-content">
-                    <h1>🏆 Welcome Coaches! 🏆</h1>
-                    <p class="team-message">The <strong>Pittsburgh Steelers</strong> organization believes that <em>collaboration makes all things better</em>. This GamePlan tool empowers our coaching staff to design, share, and perfect plays together - because great teams are built on great teamwork.</p>
+        <!-- Home Page -->
+        <div id="home-page" class="page active">
+            <div class="hero-section">
+                <div class="container">
+                    <h1 class="hero-title">🏆 Welcome Coaches! 🏆</h1>
+                    <p class="hero-subtitle">The <strong>Steelers</strong> organization believes that <em>collaboration makes all things better</em>. This GamePlan tool empowers our coaching staff to design, share, and perfect plays together - because great teams are built on great teamwork.</p>
                     <p class="coach-greeting">Let's create championship plays together! 🥇</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" data-action="new-chart">✨ Create New Play</button>
+                        <button class="btn btn-secondary" data-action="view-library">📚 View Library</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <div class="container">
+                    <h2>Features</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">🎯</div>
+                            <h3>Dynamic Drawing</h3>
+                            <p>Draw positions, routes, and blocking schemes with precision</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">💾</div>
+                            <h3>Save & Load</h3>
+                            <p>Save plays in readable formats for easy manual editing</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">📚</div>
+                            <h3>Play Library</h3>
+                            <p>Organize plays by formation, tags, and features</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🖨️</div>
+                            <h3>Print Ready</h3>
+                            <p>Customizable coaching sheets for practice and games</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Chart Page -->
-        <div id="chart-page" class="page active">
+        <div id="chart-page" class="page">
             <div class="chart-container">
                 <div class="chart-header">
                     <div class="chart-title-section compact">
@@ -204,8 +239,8 @@
                     <h2>📚 Play Library</h2>
                     <div class="library-actions">
                         <input type="file" id="import-play" accept=".json" style="display: none;">
-                        <button class="btn btn-secondary"
-                            onclick="document.getElementById('import-play').click()">📥 Import Play</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('import-play').click()">📥
+                            Import Play</button>
                         <button class="btn btn-primary" data-action="new-chart">✨ New Play</button>
                     </div>
                 </div>
