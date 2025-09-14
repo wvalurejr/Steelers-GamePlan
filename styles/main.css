@@ -502,6 +502,30 @@ body {
     text-align: left;
 }
 
+/* Auto-load section */
+.auto-load-section {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #444;
+}
+
+.auto-load-section h5 {
+    margin: 0 0 5px 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.auto-load-section select {
+    width: 100%;
+    padding: 4px;
+    font-size: 0.7rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    color: var(--text-primary);
+}
+
 .chart-actions {
     display: flex;
     gap: 10px;

@@ -171,6 +171,11 @@ class FootballChartApp {
             this.saveCustomLineup();
         });
 
+        // Auto-load lineup selection
+        document.getElementById('auto-load-lineup')?.addEventListener('change', (e) => {
+            this.setAutoLoadLineup(e.target.value);
+        });
+
         // Chart actions
         document.getElementById('save-play')?.addEventListener('click', () => {
             this.saveCurrentPlay();
@@ -597,6 +602,35 @@ class FootballChartApp {
         });
     }
 
+    // Auto-load lineup functionality
+    setAutoLoadLineup(lineupName) {
+        localStorage.setItem('autoLoadLineup', lineupName);
+        if (lineupName) {
+            this.showNotification(`Auto-load set to: ${lineupName.replace('-', ' ').toUpperCase()}`, 'success');
+        } else {
+            this.showNotification('Auto-load disabled', 'info');
+        }
+    }
+
+    getAutoLoadLineup() {
+        return localStorage.getItem('autoLoadLineup') || '';
+    }
+
+    loadAutoLineupIfSet() {
+        const autoLineup = this.getAutoLoadLineup();
+        if (autoLineup && autoLineup !== '') {
+            this.loadDefaultLineup(autoLineup);
+        }
+    }
+
+    initializeAutoLoadDropdown() {
+        const dropdown = document.getElementById('auto-load-lineup');
+        if (dropdown) {
+            const currentAutoLoad = this.getAutoLoadLineup();
+            dropdown.value = currentAutoLoad;
+        }
+    }
+
     initializeChart() {
         if (!window.canvasManager) {
             window.canvasManager = new CanvasManager('football-field');
@@ -614,6 +648,12 @@ class FootballChartApp {
         this.refreshCustomLineupsList();
         this.updateActionModeVisibility(this.currentTool);
         this.updateActionModeUI(this.currentActionMode);
+
+        // Initialize auto-load lineup dropdown
+        this.initializeAutoLoadDropdown();
+
+        // Load auto-lineup if set
+        this.loadAutoLineupIfSet();
 
         // Initialize change tracking
         this.setupChangeTracking();
