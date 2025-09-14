@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Live Server",
+			"type": "shell",
+			"command": "echo 'Live Server can be started by right-clicking index.html and selecting \"Open with Live Server\" or using the \"Go Live\" button in the status bar'",
+			"isBackground": false,
+			"group": "serve"
+		}
+	]
+}
