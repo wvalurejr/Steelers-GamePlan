@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football Chart - Play Design Tool</title>
+    <title>Steelers-GamePlan - Collaboration Makes Champions</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,17 +15,14 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <h2>Football Chart</h2>
+                <h2>🏈 Steelers-GamePlan</h2>
             </div>
             <ul class="nav-menu">
                 <li class="nav-item">
-                    <a href="#" class="nav-link active" data-page="home">Home</a>
+                    <a href="#" class="nav-link active" data-page="chart">📊 Chart</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-page="chart">Chart</a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-page="library">Library</a>
+                    <a href="#" class="nav-link" data-page="library">📚 Library</a>
                 </li>
                 <li class="nav-item">
                     <button class="theme-toggle" id="theme-toggle">🌙</button>
@@ -40,59 +37,28 @@
     </nav>
 
     <main class="main-content">
-        <!-- Home Page -->
-        <div id="home-page" class="page active">
-            <div class="hero-section">
-                <div class="container">
-                    <h1 class="hero-title">Dynamic Football Play Designer</h1>
-                    <p class="hero-subtitle">Create, save, and share professional football plays with ease</p>
-                    <div class="hero-actions">
-                        <button class="btn btn-primary" data-action="new-chart">Create New Play</button>
-                        <button class="btn btn-secondary" data-action="view-library">View Library</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="features-section">
-                <div class="container">
-                    <h2>Features</h2>
-                    <div class="features-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon">🎯</div>
-                            <h3>Dynamic Drawing</h3>
-                            <p>Draw positions, routes, and blocking schemes with precision</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">💾</div>
-                            <h3>Save & Load</h3>
-                            <p>Save plays in readable formats for easy manual editing</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">📚</div>
-                            <h3>Play Library</h3>
-                            <p>Organize plays by formation, tags, and features</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🖨️</div>
-                            <h3>Print Ready</h3>
-                            <p>Customizable coaching sheets for practice and games</p>
-                        </div>
-                    </div>
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+            <div class="container">
+                <div class="welcome-content">
+                    <h1>🏆 Welcome Coaches! 🏆</h1>
+                    <p class="team-message">The <strong>Pittsburgh Steelers</strong> organization believes that <em>collaboration makes all things better</em>. This GamePlan tool empowers our coaching staff to design, share, and perfect plays together - because great teams are built on great teamwork.</p>
+                    <p class="coach-greeting">Let's create championship plays together! 🥇</p>
                 </div>
             </div>
         </div>
 
         <!-- Chart Page -->
-        <div id="chart-page" class="page">
+        <div id="chart-page" class="page active">
             <div class="chart-container">
                 <div class="chart-header">
                     <div class="chart-title-section compact">
                         <input type="text" id="play-name" placeholder="Play name..." class="play-name-input compact">
                     </div>
                     <div class="chart-actions">
-                        <button class="btn btn-secondary" id="save-play">Save Play</button>
-                        <button class="btn btn-secondary" id="load-play">Load Play</button>
-                        <button class="btn btn-secondary" id="clear-canvas">Clear</button>
+                        <button class="btn btn-secondary" id="save-play">💾 Save Play</button>
+                        <button class="btn btn-secondary" id="load-play">📂 Load Play</button>
+                        <button class="btn btn-secondary" id="clear-canvas">🗑️ Clear</button>
                     </div>
                 </div>
 
@@ -114,7 +80,7 @@
                                 <button class="btn btn-xs" id="save-lineup">Save</button>
                             </div>
                             <div id="saved-lineups" class="saved-lineups"></div>
-                            
+
                             <!-- Auto-load section -->
                             <div class="auto-load-section">
                                 <h5>Auto-Load Lineup</h5>
@@ -168,18 +134,22 @@
                                     <button class="shape-btn" data-shape="line">—</button>
                                 </div>
                                 <div class="colors-row">
-                                    <button class="color-btn" data-color="#000000"
+                                    <button class="color-btn" data-color="#000000" title="Black"
                                         style="background-color: #000000;"></button>
-                                    <button class="color-btn active" data-color="#32CD32"
-                                        style="background-color: #32CD32;"></button>
-                                    <button class="color-btn" data-color="#FFFFFF"
+                                    <button class="color-btn active" data-color="#FF4500" title="Neon Orange"
+                                        style="background-color: #FF4500;"></button>
+                                    <button class="color-btn" data-color="#FFFFFF" title="White"
                                         style="background-color: #FFFFFF; border: 1px solid #ccc;"></button>
-                                    <button class="color-btn" data-color="#007BFF"
-                                        style="background-color: #007BFF;"></button>
-                                    <button class="color-btn" data-color="#FF6B35"
-                                        style="background-color: #FF6B35;"></button>
-                                    <button class="color-btn" data-color="#DC3545"
-                                        style="background-color: #DC3545;"></button>
+                                    <button class="color-btn" data-color="#FFB000" title="Gold"
+                                        style="background-color: #FFB000;"></button>
+                                    <button class="color-btn" data-color="#C0C0C0" title="Silver"
+                                        style="background-color: #C0C0C0;"></button>
+                                    <button class="color-btn" data-color="#808080" title="Gray"
+                                        style="background-color: #808080;"></button>
+                                    <button class="color-btn" data-color="#36454F" title="Charcoal"
+                                        style="background-color: #36454F;"></button>
+                                    <button class="color-btn" data-color="#4682B4" title="Steel Blue"
+                                        style="background-color: #4682B4;"></button>
                                 </div>
                             </div>
                         </div>
@@ -191,22 +161,22 @@
                                     Select a position to change its route/block color
                                 </div>
                                 <div class="colors-row">
-                                    <button class="route-color-btn" data-color="#FF6B35" title="Orange"
-                                        style="background-color: #FF6B35;"></button>
-                                    <button class="route-color-btn" data-color="#007BFF" title="Blue"
-                                        style="background-color: #007BFF;"></button>
-                                    <button class="route-color-btn" data-color="#DC3545" title="Red"
-                                        style="background-color: #DC3545;"></button>
-                                    <button class="route-color-btn" data-color="#28A745" title="Green"
-                                        style="background-color: #28A745;"></button>
-                                    <button class="route-color-btn" data-color="#FFC107" title="Yellow"
-                                        style="background-color: #FFC107;"></button>
-                                    <button class="route-color-btn" data-color="#6F42C1" title="Purple"
-                                        style="background-color: #6F42C1;"></button>
+                                    <button class="route-color-btn" data-color="#FF4500" title="Neon Orange"
+                                        style="background-color: #FF4500;"></button>
                                     <button class="route-color-btn" data-color="#000000" title="Black"
                                         style="background-color: #000000;"></button>
                                     <button class="route-color-btn" data-color="#FFFFFF" title="White"
                                         style="background-color: #FFFFFF; border: 1px solid #ccc;"></button>
+                                    <button class="route-color-btn" data-color="#FFB000" title="Gold"
+                                        style="background-color: #FFB000;"></button>
+                                    <button class="route-color-btn" data-color="#C0C0C0" title="Silver"
+                                        style="background-color: #C0C0C0;"></button>
+                                    <button class="route-color-btn" data-color="#808080" title="Gray"
+                                        style="background-color: #808080;"></button>
+                                    <button class="route-color-btn" data-color="#36454F" title="Charcoal"
+                                        style="background-color: #36454F;"></button>
+                                    <button class="route-color-btn" data-color="#4682B4" title="Steel Blue"
+                                        style="background-color: #4682B4;"></button>
                                 </div>
                             </div>
                         </div>
@@ -231,12 +201,12 @@
         <div id="library-page" class="page">
             <div class="library-container">
                 <div class="library-header">
-                    <h2>Play Library</h2>
+                    <h2>📚 Play Library</h2>
                     <div class="library-actions">
                         <input type="file" id="import-play" accept=".json" style="display: none;">
                         <button class="btn btn-secondary"
-                            onclick="document.getElementById('import-play').click()">Import Play</button>
-                        <button class="btn btn-primary" data-action="new-chart">New Play</button>
+                            onclick="document.getElementById('import-play').click()">📥 Import Play</button>
+                        <button class="btn btn-primary" data-action="new-chart">✨ New Play</button>
                     </div>
                 </div>
 
@@ -290,7 +260,7 @@
                                 <option value="large">Large</option>
                             </select>
                         </div>
-                        <button class="btn btn-primary" id="print-plays">Print Selected</button>
+                        <button class="btn btn-primary" id="print-plays">🖨️ Print Selected</button>
                     </div>
                 </div>
             </div>

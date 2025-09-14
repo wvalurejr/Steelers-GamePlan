@@ -1,11 +1,22 @@
 /* CSS Variables for consistent theming */
 :root {
-    --primary-color: #FF6B35;
+    --primary-color: #FF4500;  /* Bright neon orange */
     --secondary-color: #000000;
     --white: #FFFFFF;
     --light-gray: #F8F9FA;
     --medium-gray: #E9ECEF;
     --dark-gray: #6C757D;
+    
+    /* Extended 8-color palette based on black, orange, white */
+    --steelers-gold: #FFB000;     /* Bright gold */
+    --steelers-silver: #C0C0C0;   /* Silver */
+    --steelers-gray: #808080;     /* Medium gray */
+    --steelers-charcoal: #36454F; /* Dark charcoal */
+    --steelers-cream: #FFF8DC;    /* Off-white cream */
+    --steelers-bronze: #CD7F32;   /* Bronze accent */
+    --steelers-steel: #4682B4;    /* Steel blue */
+    --steelers-coal: #2F2F2F;     /* Coal black */
+    
     --success: #28A745;
     --danger: #DC3545;
     --warning: #FFC107;
@@ -32,7 +43,7 @@
 
 /* Dark theme variables */
 [data-theme="dark"] {
-    --primary-color: #FF6B35;
+    --primary-color: #FF4500;  /* Same bright neon orange */
     --secondary-color: #FFFFFF;
     --white: #1A1A1A;
     --light-gray: #2D2D2D;
@@ -93,9 +104,9 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #E5541F;
+    background-color: #E63E00;  /* Darker shade of bright orange */
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.4);
 }
 
 .btn-secondary {
@@ -292,6 +303,37 @@ body {
 .main-content {
     margin-top: var(--navbar-height);
     min-height: calc(100vh - var(--navbar-height));
+}
+
+/* Welcome Banner */
+.welcome-banner {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--steelers-gold) 100%);
+    color: var(--white);
+    padding: 20px 0;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(255, 69, 0, 0.3);
+}
+
+.welcome-content h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.team-message {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+}
+
+.coach-greeting {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1rem;
 }
 
 .page {

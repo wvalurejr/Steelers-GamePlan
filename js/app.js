@@ -1,11 +1,11 @@
 // Main Application Controller
 class FootballChartApp {
     constructor() {
-        this.currentPage = 'home';
+        this.currentPage = 'chart';
         this.currentTool = 'select';
         this.currentActionMode = 'move'; // 'move', 'route', 'block'
         this.currentShape = 'circle';
-        this.currentColor = '#32CD32'; // Default to light green
+        this.currentColor = '#FF4500'; // Default to bright neon orange
         this.collisionAvoidance = true;
         this.snapToGrid = true; // Default snap to grid enabled
         this.hasUnsavedChanges = false; // Track unsaved changes
@@ -18,7 +18,7 @@ class FootballChartApp {
         this.setupEventListeners();
         this.setupThemeToggle();
         this.loadStoredPlays();
-        this.showPage('home');
+        this.showPage('chart');
     }
 
     setupNavigation() {
@@ -39,16 +39,16 @@ class FootballChartApp {
             });
         });
 
-        // Add click handler for Football Chart title
+        // Add click handler for Steelers-GamePlan title
         if (navLogo) {
             navLogo.style.cursor = 'pointer';
             navLogo.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.navigateToPage('home');
-                // Update navigation to show home as active
-                const homeLink = document.querySelector('.nav-link[data-page="home"]');
-                if (homeLink) {
-                    this.updateNavigation(homeLink);
+                this.navigateToPage('chart');
+                // Update navigation to show chart as active
+                const chartLink = document.querySelector('.nav-link[data-page="chart"]');
+                if (chartLink) {
+                    this.updateNavigation(chartLink);
                 }
             });
         }
@@ -73,8 +73,8 @@ class FootballChartApp {
         document.documentElement.setAttribute('data-theme', currentTheme);
         themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
 
-        // Set default highlight color to light green
-        this.currentColor = '#32CD32';
+        // Set default highlight color to bright neon orange
+        this.currentColor = '#FF4500';
 
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
