@@ -5,6 +5,7 @@ class CanvasManager {
         this.ctx = this.canvas.getContext('2d');
         this.elements = [];
         this.selectedElement = null;
+        this.originalPosition = null; // Store original position for move cancel
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
         this.potentialDrag = false;
@@ -228,6 +229,7 @@ class CanvasManager {
 
         // Check if we should start dragging based on threshold
         if (this.potentialDrag && this.selectedElement && this.actionMode === 'move' && !this.isDragging) {
+            console.log('Potential drag detected, checking threshold...');
             const deltaX = x - this.dragStartPosition.x;
             const deltaY = y - this.dragStartPosition.y;
             const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -354,6 +356,7 @@ class CanvasManager {
 
         // If we're dragging a position in move mode, drop it at the current location
         if (this.isDragging && this.selectedElement && this.actionMode === 'move') {
+            console.log('Dropping element to new position...');
             let newX = x - this.dragOffset.x;
             let newY = y - this.dragOffset.y;
 
@@ -367,6 +370,9 @@ class CanvasManager {
             // Final position update
             this.selectedElement.x = newX;
             this.selectedElement.y = newY;
+
+            // Clear the original position since the move is complete
+            this.originalPosition = null;
 
             // Mark as changed for save tracking
             if (window.footballApp && window.footballApp.markAsChanged) {
@@ -425,6 +431,18 @@ class CanvasManager {
             this.isDrawing = false;
             this.activeRoute = null;
             this.activeBlock = null;
+        }
+
+        // If in move mode and a position is selected, restore its original position
+        if (this.actionMode === 'move' && this.selectedElement && this.originalPosition) {
+            this.selectedElement.x = this.originalPosition.x;
+            this.selectedElement.y = this.originalPosition.y;
+            this.originalPosition = null;
+
+            // Mark as changed for save tracking
+            if (window.footballApp && window.footballApp.markAsChanged) {
+                window.footballApp.markAsChanged();
+            }
         }
 
         // Deselect current position
@@ -521,6 +539,8 @@ class CanvasManager {
                     this.dragStartPosition.y = y;
                     this.dragOffset.x = x - element.x;
                     this.dragOffset.y = y - element.y;
+                    // Store original position for cancel
+                    this.originalPosition = { x: element.x, y: element.y };
                     break;
                 case 'route':
                     // If already in route drawing mode for this position, continue
@@ -1390,6 +1410,14 @@ class CanvasManager {
             this.ctx.textBaseline = 'top';
             this.ctx.fillText(player, x, y + radius + 5);
         }
+
+        // Draw coordinates above position using the same x and y as the lineup
+        this.ctx.fillStyle = '#000000';
+        this.ctx.font = '10px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'bottom';
+        const coordText = `(${Math.round(x)}, ${Math.round(y)})`;
+        this.ctx.fillText(coordText, x, y - radius - 5);
     }
 
     drawRoute(route) {
@@ -1604,7 +1632,7 @@ class CanvasManager {
             if (block.path.length >= 2) {
                 const secondLastIndex = block.path.length - 2;
                 const finalIndex = block.path.length - 1;
-                
+
                 const secondLast = this.editingBlockPointIndex === secondLastIndex ? this.previewPoint : block.path[secondLastIndex];
                 const finalPoint = this.editingBlockPointIndex === finalIndex ? this.previewPoint : block.path[finalIndex];
 
@@ -1739,6 +1767,7 @@ class CanvasManager {
     } setTool(tool) {
         this.tool = tool;
         this.selectedElement = null;
+        this.originalPosition = null; // Clear original position when switching tools
         this.render();
     }
 
@@ -1892,6 +1921,11 @@ class CanvasManager {
 
     // Action mode control methods
     setActionMode(mode) {
+        // Clear original position when switching away from move mode
+        if (this.actionMode === 'move' && mode !== 'move') {
+            this.originalPosition = null;
+        }
+
         this.actionMode = mode;
         // Visual feedback could be added here
         console.log(`Action mode set to: ${mode}`);
