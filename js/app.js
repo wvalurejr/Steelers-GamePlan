@@ -388,7 +388,7 @@ class FootballChartApp {
     loadInitialPage() {
         // Check URL hash on startup and navigate to appropriate page
         const hash = window.location.hash.substring(1); // Remove the # symbol
-        
+
         if (hash && ['home', 'chart', 'library'].includes(hash)) {
             this.showPage(hash);
         } else {
@@ -401,7 +401,7 @@ class FootballChartApp {
     handleRouteChange() {
         // Handle URL hash changes
         const hash = window.location.hash.substring(1);
-        
+
         if (hash && ['home', 'chart', 'library'].includes(hash)) {
             this.showPage(hash);
         }
@@ -635,21 +635,23 @@ class FootballChartApp {
 
         if (customLineups.length === 0) {
             container.innerHTML = '<p class="no-lineups">No saved lineups</p>';
-            return;
+        } else {
+            customLineups.forEach(lineup => {
+                const lineupItem = document.createElement('div');
+                lineupItem.className = 'lineup-item';
+                lineupItem.innerHTML = `
+                    <span class="lineup-name">${lineup.name}</span>
+                    <div class="lineup-actions">
+                        <button class="btn btn-xs" onclick="window.footballApp.loadCustomLineup('${lineup.name}')">Load</button>
+                        <button class="btn btn-xs btn-danger" onclick="window.footballApp.deleteCustomLineup('${lineup.name}')">Delete</button>
+                    </div>
+                `;
+                container.appendChild(lineupItem);
+            });
         }
 
-        customLineups.forEach(lineup => {
-            const lineupItem = document.createElement('div');
-            lineupItem.className = 'lineup-item';
-            lineupItem.innerHTML = `
-                <span class="lineup-name">${lineup.name}</span>
-                <div class="lineup-actions">
-                    <button class="btn btn-xs" onclick="window.footballApp.loadCustomLineup('${lineup.name}')">Load</button>
-                    <button class="btn btn-xs btn-danger" onclick="window.footballApp.deleteCustomLineup('${lineup.name}')">Delete</button>
-                </div>
-            `;
-            container.appendChild(lineupItem);
-        });
+        // Refresh auto-load dropdown to include custom lineups
+        this.initializeAutoLoadDropdown();
     }
 
     // Auto-load lineup functionality
@@ -669,13 +671,57 @@ class FootballChartApp {
     loadAutoLineupIfSet() {
         const autoLineup = this.getAutoLoadLineup();
         if (autoLineup && autoLineup !== '') {
-            this.loadDefaultLineup(autoLineup);
+            if (autoLineup.startsWith('custom:')) {
+                // Load custom lineup
+                const lineupName = autoLineup.replace('custom:', '');
+                this.loadCustomLineup(lineupName);
+            } else {
+                // Load default lineup
+                this.loadDefaultLineup(autoLineup);
+            }
         }
     }
 
     initializeAutoLoadDropdown() {
         const dropdown = document.getElementById('auto-load-lineup');
         if (dropdown) {
+            // Clear existing options except the first one
+            dropdown.innerHTML = '<option value="">None</option>';
+            
+            // Add default lineups
+            const defaultLineups = [
+                { value: 'linemen-only', name: 'Linemen Only' },
+                { value: 'i-formation', name: 'I-Formation' },
+                { value: 'shotgun', name: 'Shotgun' },
+                { value: 'pistol', name: 'Pistol' },
+                { value: 'wildcat', name: 'Wildcat' },
+                { value: 'goal-line', name: 'Goal Line' }
+            ];
+            
+            defaultLineups.forEach(lineup => {
+                const option = document.createElement('option');
+                option.value = lineup.value;
+                option.textContent = lineup.name;
+                dropdown.appendChild(option);
+            });
+            
+            // Add custom lineups
+            const customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
+            if (customLineups.length > 0) {
+                // Add separator
+                const separator = document.createElement('option');
+                separator.disabled = true;
+                separator.textContent = '── Custom Lineups ──';
+                dropdown.appendChild(separator);
+                
+                customLineups.forEach(lineup => {
+                    const option = document.createElement('option');
+                    option.value = `custom:${lineup.name}`;
+                    option.textContent = lineup.name;
+                    dropdown.appendChild(option);
+                });
+            }
+            
             const currentAutoLoad = this.getAutoLoadLineup();
             dropdown.value = currentAutoLoad;
         }

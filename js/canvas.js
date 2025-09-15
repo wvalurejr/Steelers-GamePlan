@@ -12,7 +12,7 @@ class CanvasManager {
         this.dragThreshold = 8; // pixels (increased from 5 for less sensitivity)
         this.dragStartPosition = { x: 0, y: 0 };
         this.tool = 'select';
-        this.actionMode = 'move'; // 'move', 'route', 'block'
+        this.actionMode = 'edit'; // 'edit', 'move', 'route', 'block'
         this.shape = 'circle';
         this.color = '#000000';
         this.isDrawing = false;
@@ -93,16 +93,26 @@ class CanvasManager {
     // Helper method to get accurate canvas coordinates
     getCanvasCoordinates(clientX, clientY) {
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
         
-        return {
-            x: (clientX - rect.left) * scaleX,
-            y: (clientY - rect.top) * scaleY
-        };
-    }
-
-    drawField() {
+        // Get computed styles to account for borders and padding
+        const computedStyle = window.getComputedStyle(this.canvas);
+        const borderLeft = parseInt(computedStyle.borderLeftWidth) || 0;
+        const borderTop = parseInt(computedStyle.borderTopWidth) || 0;
+        
+        // Calculate the actual canvas content area
+        const canvasContentWidth = rect.width - (borderLeft * 2);
+        const canvasContentHeight = rect.height - (borderTop * 2);
+        
+        // Calculate scaling factors
+        const scaleX = this.canvas.width / canvasContentWidth;
+        const scaleY = this.canvas.height / canvasContentHeight;
+        
+        // Adjust for borders and calculate scaled coordinates
+        const x = (clientX - rect.left - borderLeft) * scaleX;
+        const y = (clientY - rect.top - borderTop) * scaleY;
+        
+        return { x, y };
+    }    drawField() {
         const width = this.canvas.width;
         const height = this.canvas.height;
 
@@ -646,6 +656,9 @@ class CanvasManager {
             this.selectedElement = element;
 
             switch (this.actionMode) {
+                case 'edit':
+                    // In edit mode, just select the position for property editing
+                    break;
                 case 'move':
                     // Set up potential drag, but don't start dragging yet
                     this.potentialDrag = true;
@@ -685,6 +698,10 @@ class CanvasManager {
             if (window.footballApp) {
                 window.footballApp.updateSelectionStatus(element);
             }
+        } else if (this.actionMode === 'edit' && !element) {
+            // In edit mode, clicking empty space creates a new position
+            this.createPosition(x, y);
+            return;
         } else if (!this.isDrawing && !this.routeDrawingMode) {
             // Only deselect if we're not in the middle of drawing
             // Right-click will handle deselection during drawing
@@ -1222,9 +1239,7 @@ class CanvasManager {
             name: document.getElementById('position-name')?.value || '',
             player: document.getElementById('player-name')?.value || '',
             id: Date.now().toString()
-        };
-
-        this.elements.push(position);
+        };        this.elements.push(position);
         this.selectedElement = position;
         this.render();
 
@@ -1993,9 +2008,20 @@ class CanvasManager {
     saveCustomLineup(name) {
         if (!name.trim()) return false;
 
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+
+        // Convert positions to relative coordinates for storage
+        const positions = this.elements.filter(el => el.type === 'position').map(pos => ({
+            ...pos,
+            // Store as relative coordinates (0-1 range)
+            x: pos.x / width,
+            y: pos.y / height
+        }));
+
         const lineupData = {
             name: name,
-            positions: this.elements.filter(el => el.type === 'position'),
+            positions: positions,
             created: new Date().toISOString()
         };
 
@@ -2018,8 +2044,15 @@ class CanvasManager {
         const lineup = customLineups.find(l => l.name === name);
 
         if (lineup) {
+            const width = this.canvas.width;
+            const height = this.canvas.height;
+
+            // Convert relative coordinates back to absolute coordinates
             this.elements = lineup.positions.map(pos => ({
                 ...pos,
+                // Convert from relative coordinates to current canvas coordinates
+                x: pos.x * width,
+                y: pos.y * height,
                 id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
             }));
             this.selectedElement = null;
