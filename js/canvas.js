@@ -12,7 +12,7 @@ class CanvasManager {
         this.dragThreshold = 8; // pixels (increased from 5 for less sensitivity)
         this.dragStartPosition = { x: 0, y: 0 };
         this.tool = 'select';
-        this.actionMode = 'move'; // 'move', 'route', 'block'
+        this.actionMode = 'move'; // 'edit', 'move', 'route', 'block'
         this.shape = 'circle';
         this.color = '#000000';
         this.isDrawing = false;
@@ -56,9 +56,13 @@ class CanvasManager {
         // Width should be proportional to football field width (53.3 yards)
         const fieldAspectRatio = 53.3 / 30; // width/height ratio for 30-yard field
 
-        let canvasHeight = Math.min(700, containerRect.height - 40);
+        // Significantly increase maximum height for realistic yard-to-player scaling
+        // Goal: Each yard should be large enough that a player position fits comfortably within it
+        // With 30 yards and 1200px height, each yard = 40px, making 18px radius players realistic
+        let canvasHeight = Math.min(1200, containerRect.height - 40); // Increased from 700 to 1200
         let canvasWidth = canvasHeight * fieldAspectRatio;
 
+        // Check if width exceeds container, if so scale down proportionally
         if (canvasWidth > containerRect.width - 40) {
             canvasWidth = containerRect.width - 40;
             canvasHeight = canvasWidth / fieldAspectRatio;
@@ -90,48 +94,73 @@ class CanvasManager {
         this.canvas.addEventListener('touchmove', (e) => e.preventDefault());
     }
 
-    drawField() {
+    // Helper method to get accurate canvas coordinates
+    getCanvasCoordinates(clientX, clientY) {
+        const rect = this.canvas.getBoundingClientRect();
+
+        // Get computed styles to account for borders and padding
+        const computedStyle = window.getComputedStyle(this.canvas);
+        const borderLeft = parseInt(computedStyle.borderLeftWidth) || 0;
+        const borderTop = parseInt(computedStyle.borderTopWidth) || 0;
+
+        // Calculate the actual canvas content area
+        const canvasContentWidth = rect.width - (borderLeft * 2);
+        const canvasContentHeight = rect.height - (borderTop * 2);
+
+        // Calculate scaling factors
+        const scaleX = this.canvas.width / canvasContentWidth;
+        const scaleY = this.canvas.height / canvasContentHeight;
+
+        // Adjust for borders and calculate scaled coordinates
+        const x = (clientX - rect.left - borderLeft) * scaleX;
+        const y = (clientY - rect.top - borderTop) * scaleY;
+
+        return { x, y };
+    } drawField() {
         const width = this.canvas.width;
         const height = this.canvas.height;
 
-        // Field background
+        // Field background with grass texture
         this.ctx.fillStyle = '#2d5016';
         this.ctx.fillRect(0, 0, width, height);
+
+        // Add subtle grass texture
+        this.drawGrassTexture();
 
         // Field lines for vertical 30-yard field (15 yards each side of center)
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 2;
 
-        // Center line (at middle of field)
-        this.ctx.lineWidth = 3;
+        // Center line (50-yard line) - thicker and more prominent
+        this.ctx.lineWidth = 4;
         this.ctx.beginPath();
         this.ctx.moveTo(0, height / 2);
         this.ctx.lineTo(width, height / 2);
         this.ctx.stroke();
 
-        // 5-yard lines above center
-        this.ctx.lineWidth = 1;
+        // 5-yard lines above center (45, 40, 35 yard lines)
+        this.ctx.lineWidth = 1.5;
         for (let i = 1; i <= 3; i++) {
-            const y = height / 2 - (height / 6) * i; // 5, 10, 15 yard lines above center
+            const y = height / 2 - (height / 6) * i;
             this.ctx.beginPath();
             this.ctx.moveTo(0, y);
             this.ctx.lineTo(width, y);
             this.ctx.stroke();
         }
 
-        // 5-yard lines below center
+        // 5-yard lines below center (45, 40, 35 yard lines on other side)
         for (let i = 1; i <= 3; i++) {
-            const y = height / 2 + (height / 6) * i; // 5, 10, 15 yard lines below center
+            const y = height / 2 + (height / 6) * i;
             this.ctx.beginPath();
             this.ctx.moveTo(0, y);
             this.ctx.lineTo(width, y);
             this.ctx.stroke();
         }
 
-        // 10-yard lines (thicker)
-        this.ctx.lineWidth = 2;
-        const tenYardAbove = height / 2 - (height / 3); // 10 yard line above center
-        const tenYardBelow = height / 2 + (height / 3); // 10 yard line below center
+        // 10-yard lines (thicker) - these are the 40-yard lines
+        this.ctx.lineWidth = 3;
+        const tenYardAbove = height / 2 - (height / 3);
+        const tenYardBelow = height / 2 + (height / 3);
 
         this.ctx.beginPath();
         this.ctx.moveTo(0, tenYardAbove);
@@ -143,54 +172,151 @@ class CanvasManager {
         this.ctx.lineTo(width, tenYardBelow);
         this.ctx.stroke();
 
-        // Hash marks (horizontal lines across the field)
-        const hashLength = width * 0.08;
-        this.ctx.lineWidth = 1;
+        // Draw detailed hash marks
+        this.drawHashMarks();
 
-        // Draw hash marks every yard
-        for (let i = 0; i <= 6; i++) {
-            const yAbove = height / 2 - (height / 6) * i;
-            const yBelow = height / 2 + (height / 6) * i;
+        // Sidelines - thicker and more prominent
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(2, 0);
+        this.ctx.lineTo(2, height);
+        this.ctx.moveTo(width - 2, 0);
+        this.ctx.lineTo(width - 2, height);
+        this.ctx.stroke();
 
-            // Left hash marks
-            this.ctx.beginPath();
-            this.ctx.moveTo(width * 0.35, yAbove);
-            this.ctx.lineTo(width * 0.35 + hashLength, yAbove);
-            this.ctx.stroke();
+        // End lines (goal lines)
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, 2);
+        this.ctx.lineTo(width, 2);
+        this.ctx.moveTo(0, height - 2);
+        this.ctx.lineTo(width, height - 2);
+        this.ctx.stroke();
 
-            this.ctx.beginPath();
-            this.ctx.moveTo(width * 0.35, yBelow);
-            this.ctx.lineTo(width * 0.35 + hashLength, yBelow);
-            this.ctx.stroke();
+        // Add field crown effect (slight curve to simulate field crown)
+        this.drawFieldCrown();
+    }
 
-            // Right hash marks
-            this.ctx.beginPath();
-            this.ctx.moveTo(width * 0.65 - hashLength, yAbove);
-            this.ctx.lineTo(width * 0.65, yAbove);
-            this.ctx.stroke();
+    drawGrassTexture() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
 
-            this.ctx.beginPath();
-            this.ctx.moveTo(width * 0.65 - hashLength, yBelow);
-            this.ctx.lineTo(width * 0.65, yBelow);
-            this.ctx.stroke();
+        // Create subtle grass stripes
+        this.ctx.globalAlpha = 0.1;
+        this.ctx.fillStyle = '#1a3d0f';
+
+        const stripeWidth = width / 20;
+        for (let i = 0; i < 20; i += 2) {
+            this.ctx.fillRect(i * stripeWidth, 0, stripeWidth, height);
         }
 
-        // Sidelines
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, 0);
-        this.ctx.lineTo(0, height);
-        this.ctx.moveTo(width, 0);
-        this.ctx.lineTo(width, height);
-        this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
+    }
 
-        // End lines
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, 0);
-        this.ctx.lineTo(width, 0);
-        this.ctx.moveTo(0, height);
-        this.ctx.lineTo(width, height);
-        this.ctx.stroke();
+    drawHashMarks() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const hashLength = width * 0.08;
+
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+
+        // NCAA/NFL hash mark positions (closer to center than high school)
+        const leftHashX = width * 0.4;
+        const rightHashX = width * 0.6;
+
+        // Draw hash marks at every yard (every 6th of the field sections)
+        for (let section = 0; section <= 6; section++) {
+            const yAbove = height / 2 - (height / 6) * section;
+            const yBelow = height / 2 + (height / 6) * section;
+
+            if (section <= 3) { // Only draw for visible field area
+                // Left hash marks
+                this.ctx.beginPath();
+                this.ctx.moveTo(leftHashX - hashLength / 2, yAbove);
+                this.ctx.lineTo(leftHashX + hashLength / 2, yAbove);
+                this.ctx.stroke();
+
+                if (section > 0) { // Don't duplicate center line
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(leftHashX - hashLength / 2, yBelow);
+                    this.ctx.lineTo(leftHashX + hashLength / 2, yBelow);
+                    this.ctx.stroke();
+                }
+
+                // Right hash marks
+                this.ctx.beginPath();
+                this.ctx.moveTo(rightHashX - hashLength / 2, yAbove);
+                this.ctx.lineTo(rightHashX + hashLength / 2, yAbove);
+                this.ctx.stroke();
+
+                if (section > 0) { // Don't duplicate center line
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(rightHashX - hashLength / 2, yBelow);
+                    this.ctx.lineTo(rightHashX + hashLength / 2, yBelow);
+                    this.ctx.stroke();
+                }
+            }
+        }
+
+        // Add smaller tick marks between major lines
+        this.ctx.lineWidth = 1;
+        const tickLength = hashLength * 0.4;
+
+        for (let section = 0; section < 6; section++) {
+            for (let tick = 1; tick < 5; tick++) {
+                const yOffset = (height / 6) * (tick / 5);
+                const yAbove = height / 2 - (height / 6) * section - yOffset;
+                const yBelow = height / 2 + (height / 6) * section + yOffset;
+
+                if (yAbove > 0 && yAbove < height && section < 3) {
+                    // Left side ticks
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(leftHashX - tickLength / 2, yAbove);
+                    this.ctx.lineTo(leftHashX + tickLength / 2, yAbove);
+                    this.ctx.stroke();
+
+                    // Right side ticks
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(rightHashX - tickLength / 2, yAbove);
+                    this.ctx.lineTo(rightHashX + tickLength / 2, yAbove);
+                    this.ctx.stroke();
+                }
+
+                if (yBelow > 0 && yBelow < height && section < 3) {
+                    // Left side ticks
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(leftHashX - tickLength / 2, yBelow);
+                    this.ctx.lineTo(leftHashX + tickLength / 2, yBelow);
+                    this.ctx.stroke();
+
+                    // Right side ticks
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(rightHashX - tickLength / 2, yBelow);
+                    this.ctx.lineTo(rightHashX + tickLength / 2, yBelow);
+                    this.ctx.stroke();
+                }
+            }
+        }
+    }
+
+    drawFieldCrown() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+
+        // Add subtle shading to simulate field crown (higher in the middle)
+        this.ctx.globalAlpha = 0.05;
+
+        const gradient = this.ctx.createLinearGradient(0, 0, width, 0);
+        gradient.addColorStop(0, '#000000');
+        gradient.addColorStop(0.2, 'transparent');
+        gradient.addColorStop(0.8, 'transparent');
+        gradient.addColorStop(1, '#000000');
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, width, height);
+
+        this.ctx.globalAlpha = 1.0;
     }
 
     handleMouseDown(e) {
@@ -199,9 +325,9 @@ class CanvasManager {
             return;
         }
 
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+        const x = coords.x;
+        const y = coords.y;
 
         this.startX = x;
         this.startY = y;
@@ -223,9 +349,9 @@ class CanvasManager {
     }
 
     handleMouseMove(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+        const x = coords.x;
+        const y = coords.y;
 
         // Check if we should start dragging based on threshold
         if (this.potentialDrag && this.selectedElement && this.actionMode === 'move' && !this.isDragging) {
@@ -338,9 +464,9 @@ class CanvasManager {
             return;
         }
 
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+        const x = coords.x;
+        const y = coords.y;
 
         // If we're editing a route point, complete the edit
         if (this.editingRoutePoint && this.editingRoute && this.previewPoint) {
@@ -355,7 +481,7 @@ class CanvasManager {
         }
 
         // If we're dragging a position in move mode, drop it at the current location
-        if (this.isDragging && this.selectedElement && this.actionMode === 'move') {
+        if ((this.isDragging || this.potentialDrag) && this.selectedElement && this.actionMode === 'move') {
             console.log('Dropping element to new position...');
             let newX = x - this.dragOffset.x;
             let newY = y - this.dragOffset.y;
@@ -378,6 +504,10 @@ class CanvasManager {
             if (window.footballApp && window.footballApp.markAsChanged) {
                 window.footballApp.markAsChanged();
             }
+
+            // Stop moving the position
+            this.isDragging = false;
+            this.potentialDrag = false;
 
             this.render();
         }
@@ -406,9 +536,9 @@ class CanvasManager {
     handleRightClick(e) {
         e.preventDefault(); // Prevent context menu
 
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+        const x = coords.x;
+        const y = coords.y;
 
         // If we're in route drawing mode, add final point and finish the route
         if (this.routeDrawingMode && this.activeRoute) {
@@ -532,6 +662,9 @@ class CanvasManager {
             this.selectedElement = element;
 
             switch (this.actionMode) {
+                case 'edit':
+                    // In edit mode, just select the position for property editing
+                    break;
                 case 'move':
                     // Set up potential drag, but don't start dragging yet
                     this.potentialDrag = true;
@@ -571,6 +704,10 @@ class CanvasManager {
             if (window.footballApp) {
                 window.footballApp.updateSelectionStatus(element);
             }
+        } else if (this.actionMode === 'edit' && !element) {
+            // In edit mode, clicking empty space creates a new position
+            this.createPosition(x, y);
+            return;
         } else if (!this.isDrawing && !this.routeDrawingMode) {
             // Only deselect if we're not in the middle of drawing
             // Right-click will handle deselection during drawing
@@ -735,7 +872,7 @@ class CanvasManager {
         for (let element of this.elements) {
             if (element.type === 'position') {
                 const distance = this.distanceToLine({ x: element.x, y: element.y }, from, to);
-                if (distance < 25) { // Collision threshold (slightly larger than position radius)
+                if (distance < 20) { // Collision threshold (slightly larger than new position radius)
                     return true;
                 }
             }
@@ -1108,9 +1245,7 @@ class CanvasManager {
             name: document.getElementById('position-name')?.value || '',
             player: document.getElementById('player-name')?.value || '',
             id: Date.now().toString()
-        };
-
-        this.elements.push(position);
+        }; this.elements.push(position);
         this.selectedElement = position;
         this.render();
 
@@ -1202,7 +1337,7 @@ class CanvasManager {
                 const distance = Math.sqrt(
                     Math.pow(x - element.x, 2) + Math.pow(y - element.y, 2)
                 );
-                if (distance <= 22) { // Updated to match larger shape radius
+                if (distance <= 18) { // Updated to match new position radius
                     return element;
                 }
             } else if (element.type === 'route' || element.type === 'block') {
@@ -1332,7 +1467,7 @@ class CanvasManager {
 
     drawPosition(position) {
         const { x, y, shape, color, name, player } = position;
-        const radius = 22; // Larger shapes for better visibility
+        const radius = 18; // Scaled down for more realistic proportions relative to yard lines
 
         this.ctx.fillStyle = color;
         this.ctx.strokeStyle = '#ffffff';
@@ -1412,8 +1547,8 @@ class CanvasManager {
         }
 
         // Draw coordinates above position using the same x and y as the lineup
-        this.ctx.fillStyle = '#000000';
-        this.ctx.font = '10px Arial';
+        this.ctx.fillStyle = '#FF6B35';
+        this.ctx.font = '12px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'bottom';
         const coordText = `(${Math.round(x)}, ${Math.round(y)})`;
@@ -1718,7 +1853,7 @@ class CanvasManager {
             this.ctx.lineWidth = 3;
             this.ctx.beginPath();
 
-            const radius = 22; // Match the actual position size
+            const radius = 18; // Match the updated position size
 
             // Match the selection reticle to the position's shape with actual size
             switch (element.shape) {
@@ -1797,6 +1932,16 @@ class CanvasManager {
 
     loadPlayData(data) {
         this.elements = data.elements || [];
+
+        // Snap all positions to grid when loading
+        this.elements.forEach(element => {
+            if (element.type === 'position') {
+                const snapped = this.snapCoordinates(element.x, element.y);
+                element.x = snapped.x;
+                element.y = snapped.y;
+            }
+        });
+
         this.selectedElement = null;
         this.render();
     }
@@ -1823,6 +1968,8 @@ class CanvasManager {
             }
         });
 
+        // Force a complete redraw
+        this.drawField();
         this.render();
     }
 
@@ -1865,10 +2012,21 @@ class CanvasManager {
         const lineup = lineups[lineupName];
 
         if (lineup) {
-            this.elements = lineup.map(pos => ({
-                ...pos,
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-            }));
+            this.elements = lineup.map(pos => {
+                const element = {
+                    ...pos,
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+                };
+
+                // Snap position to grid when loading
+                if (element.type === 'position') {
+                    const snapped = this.snapCoordinates(element.x, element.y);
+                    element.x = snapped.x;
+                    element.y = snapped.y;
+                }
+
+                return element;
+            });
             this.selectedElement = null;
             this.render();
         }
@@ -1877,9 +2035,20 @@ class CanvasManager {
     saveCustomLineup(name) {
         if (!name.trim()) return false;
 
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+
+        // Convert positions to relative coordinates for storage
+        const positions = this.elements.filter(el => el.type === 'position').map(pos => ({
+            ...pos,
+            // Store as relative coordinates (0-1 range)
+            x: pos.x / width,
+            y: pos.y / height
+        }));
+
         const lineupData = {
             name: name,
-            positions: this.elements.filter(el => el.type === 'position'),
+            positions: positions,
             created: new Date().toISOString()
         };
 
@@ -1902,10 +2071,28 @@ class CanvasManager {
         const lineup = customLineups.find(l => l.name === name);
 
         if (lineup) {
-            this.elements = lineup.positions.map(pos => ({
-                ...pos,
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-            }));
+            const width = this.canvas.width;
+            const height = this.canvas.height;
+
+            // Convert relative coordinates back to absolute coordinates
+            this.elements = lineup.positions.map(pos => {
+                const element = {
+                    ...pos,
+                    // Convert from relative coordinates to current canvas coordinates
+                    x: pos.x * width,
+                    y: pos.y * height,
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+                };
+
+                // Snap position to grid when loading custom lineup
+                if (element.type === 'position') {
+                    const snapped = this.snapCoordinates(element.x, element.y);
+                    element.x = snapped.x;
+                    element.y = snapped.y;
+                }
+
+                return element;
+            });
             this.selectedElement = null;
             this.render();
             return true;

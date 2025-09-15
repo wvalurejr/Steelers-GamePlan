@@ -1,11 +1,31 @@
 /* CSS Variables for consistent theming */
 :root {
     --primary-color: #FF6B35;
+    /* Darker vibrant orange */
     --secondary-color: #000000;
     --white: #FFFFFF;
     --light-gray: #F8F9FA;
     --medium-gray: #E9ECEF;
     --dark-gray: #6C757D;
+
+    /* Extended 8-color palette based on black, orange, white */
+    --steelers-gold: #FFB000;
+    /* Bright gold */
+    --steelers-silver: #C0C0C0;
+    /* Silver */
+    --steelers-gray: #808080;
+    /* Medium gray */
+    --steelers-charcoal: #36454F;
+    /* Dark charcoal */
+    --steelers-cream: #FFF8DC;
+    /* Off-white cream */
+    --steelers-bronze: #CD7F32;
+    /* Bronze accent */
+    --steelers-steel: #4682B4;
+    /* Steel blue */
+    --steelers-coal: #2F2F2F;
+    /* Coal black */
+
     --success: #28A745;
     --danger: #DC3545;
     --warning: #FFC107;
@@ -33,6 +53,7 @@
 /* Dark theme variables */
 [data-theme="dark"] {
     --primary-color: #FF6B35;
+    /* Same darker orange */
     --secondary-color: #FFFFFF;
     --white: #1A1A1A;
     --light-gray: #2D2D2D;
@@ -93,9 +114,10 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #E5541F;
+    background-color: #CC3700;
+    /* Even darker shade */
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 15px rgba(230, 62, 0, 0.4);
 }
 
 .btn-secondary {
@@ -317,7 +339,7 @@ body {
 
 /* Home Page */
 .hero-section {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #E5541F 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--steelers-gold) 100%);
     color: var(--white);
     padding: 100px 0;
     text-align: center;
@@ -332,8 +354,18 @@ body {
 
 .hero-subtitle {
     font-size: 1.25rem;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     opacity: 0.95;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+}
+
+.coach-greeting {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 40px;
 }
 
 .hero-actions {
@@ -502,6 +534,30 @@ body {
     text-align: left;
 }
 
+/* Auto-load section */
+.auto-load-section {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #444;
+}
+
+.auto-load-section h5 {
+    margin: 0 0 5px 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.auto-load-section select {
+    width: 100%;
+    padding: 4px;
+    font-size: 0.7rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    color: var(--text-primary);
+}
+
 .chart-actions {
     display: flex;
     gap: 10px;
@@ -522,6 +578,11 @@ body {
     padding: 15px;
     overflow-y: auto;
     border: 1px solid var(--border-color);
+}
+
+.toolbar-toggle {
+    display: none;
+    /* Hidden by default, shown only on small screens */
 }
 
 .tool-section {
@@ -913,7 +974,100 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+
+/* Large tablets and small laptops - maintain full toolbar width as long as possible */
+@media (max-width: 1024px) and (min-width: 701px) {
+    .chart-workspace {
+        gap: 15px;
+        /* Reduce gap slightly to give more space */
+    }
+
+    .tool-section {
+        margin-bottom: 15px;
+        /* Compact sections more */
+    }
+
+    .tool-section h4 {
+        font-size: 0.85rem;
+        /* Slightly smaller headings */
+    }
+
+    /* Keep full 280px toolbar width - don't shrink until we hit the 700px popout threshold */
+}
+
+/* Auto-collapse breakpoint: When toolbar would be squeezed below 280px */
+/* This calculates: container width - gaps - canvas min-width < 280px toolbar */
+/* Approximately: 280px toolbar + 20px gap + 400px min canvas = 700px total needed */
+@media (max-width: 700px) {
+    .chart-workspace {
+        position: relative;
+    }
+
+    .toolbar {
+        position: absolute;
+        top: 0;
+        left: -280px;
+        /* Hidden by default */
+        width: 280px;
+        /* Keep full width in popout */
+        height: 100%;
+        z-index: 1000;
+        background: var(--bg-primary);
+        border-right: 1px solid var(--border-color);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        transition: left 0.3s ease;
+        border-radius: 0;
+        /* Remove border radius for full-height panel */
+    }
+
+    .toolbar.open {
+        left: 0;
+        /* Slide in when open */
+    }
+
+    .toolbar-toggle {
+        display: block;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        font-size: 0.9rem;
+        box-shadow: var(--box-shadow);
+    }
+
+    .toolbar-toggle:hover {
+        background: #e55a2b;
+    }
+
+    .canvas-container {
+        width: 100% !important;
+        margin-left: 0;
+    }
+
+    .toolbar-overlay {
+        display: none;
+        position: fixed;
+        top: var(--navbar-height);
+        left: 0;
+        width: 100%;
+        height: calc(100vh - var(--navbar-height));
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
+    .toolbar.open~.toolbar-overlay {
+        display: block;
+    }
+}
+
+/* Mobile phones (max-width: 480px) - Additional mobile-specific adjustments */
+@media (max-width: 480px) {
     .hamburger {
         display: flex;
     }
@@ -949,13 +1103,8 @@ body {
     }
 
     .chart-workspace {
-        flex-direction: column;
         height: auto;
-    }
-
-    .toolbar {
-        width: 100%;
-        margin-bottom: 20px;
+        /* Allow flexible height on very small screens */
     }
 
     #football-field {

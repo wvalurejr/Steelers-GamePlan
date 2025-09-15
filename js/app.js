@@ -5,7 +5,7 @@ class FootballChartApp {
         this.currentTool = 'select';
         this.currentActionMode = 'move'; // 'move', 'route', 'block'
         this.currentShape = 'circle';
-        this.currentColor = '#32CD32'; // Default to light green
+        this.currentColor = '#E63E00'; // Default to darker orange
         this.collisionAvoidance = true;
         this.snapToGrid = true; // Default snap to grid enabled
         this.hasUnsavedChanges = false; // Track unsaved changes
@@ -18,7 +18,8 @@ class FootballChartApp {
         this.setupEventListeners();
         this.setupThemeToggle();
         this.loadStoredPlays();
-        this.showPage('home');
+        this.setupRouting();
+        this.loadInitialPage();
     }
 
     setupNavigation() {
@@ -39,7 +40,7 @@ class FootballChartApp {
             });
         });
 
-        // Add click handler for Football Chart title
+        // Add click handler for Steelers GamePlan title
         if (navLogo) {
             navLogo.style.cursor = 'pointer';
             navLogo.addEventListener('click', (e) => {
@@ -73,8 +74,8 @@ class FootballChartApp {
         document.documentElement.setAttribute('data-theme', currentTheme);
         themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
 
-        // Set default highlight color to light green
-        this.currentColor = '#32CD32';
+        // Set default highlight color to darker orange
+        this.currentColor = '#E63E00';
 
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -171,6 +172,11 @@ class FootballChartApp {
             this.saveCustomLineup();
         });
 
+        // Auto-load lineup selection
+        document.getElementById('auto-load-lineup')?.addEventListener('change', (e) => {
+            this.setAutoLoadLineup(e.target.value);
+        });
+
         // Chart actions
         document.getElementById('save-play')?.addEventListener('click', () => {
             this.saveCurrentPlay();
@@ -224,11 +230,15 @@ class FootballChartApp {
             this.importPlay(e.target.files[0]);
         });
 
-        // Window resize handler
+        // Window resize handler with debouncing
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            if (window.canvasManager) {
-                window.canvasManager.handleResize();
-            }
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (window.canvasManager) {
+                    window.canvasManager.handleResize();
+                }
+            }, 100); // 100ms debounce
         });
     }
 
@@ -246,6 +256,9 @@ class FootballChartApp {
 
             // Update navigation highlighting
             this.updateNavigationForPage(pageId);
+
+            // Update URL hash
+            this.updateURL(pageId);
 
             // Initialize page-specific functionality
             switch (pageId) {
@@ -356,6 +369,48 @@ class FootballChartApp {
         const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
         if (activeLink) {
             activeLink.classList.add('active');
+        }
+    }
+
+    // URL Routing Methods
+    setupRouting() {
+        // Listen for hash changes
+        window.addEventListener('hashchange', () => {
+            this.handleRouteChange();
+        });
+
+        // Listen for browser back/forward buttons
+        window.addEventListener('popstate', () => {
+            this.handleRouteChange();
+        });
+    }
+
+    loadInitialPage() {
+        // Check URL hash on startup and navigate to appropriate page
+        const hash = window.location.hash.substring(1); // Remove the # symbol
+
+        if (hash && ['home', 'chart', 'library'].includes(hash)) {
+            this.showPage(hash);
+        } else {
+            // Default to home page if no valid hash
+            this.showPage('home');
+            this.updateURL('home');
+        }
+    }
+
+    handleRouteChange() {
+        // Handle URL hash changes
+        const hash = window.location.hash.substring(1);
+
+        if (hash && ['home', 'chart', 'library'].includes(hash)) {
+            this.showPage(hash);
+        }
+    }
+
+    updateURL(pageId) {
+        // Update URL hash without triggering navigation
+        if (window.location.hash !== `#${pageId}`) {
+            window.history.pushState(null, null, `#${pageId}`);
         }
     }
 
@@ -580,21 +635,96 @@ class FootballChartApp {
 
         if (customLineups.length === 0) {
             container.innerHTML = '<p class="no-lineups">No saved lineups</p>';
-            return;
+        } else {
+            customLineups.forEach(lineup => {
+                const lineupItem = document.createElement('div');
+                lineupItem.className = 'lineup-item';
+                lineupItem.innerHTML = `
+                    <span class="lineup-name">${lineup.name}</span>
+                    <div class="lineup-actions">
+                        <button class="btn btn-xs" onclick="window.footballApp.loadCustomLineup('${lineup.name}')">Load</button>
+                        <button class="btn btn-xs btn-danger" onclick="window.footballApp.deleteCustomLineup('${lineup.name}')">Delete</button>
+                    </div>
+                `;
+                container.appendChild(lineupItem);
+            });
         }
 
-        customLineups.forEach(lineup => {
-            const lineupItem = document.createElement('div');
-            lineupItem.className = 'lineup-item';
-            lineupItem.innerHTML = `
-                <span class="lineup-name">${lineup.name}</span>
-                <div class="lineup-actions">
-                    <button class="btn btn-xs" onclick="window.footballApp.loadCustomLineup('${lineup.name}')">Load</button>
-                    <button class="btn btn-xs btn-danger" onclick="window.footballApp.deleteCustomLineup('${lineup.name}')">Delete</button>
-                </div>
-            `;
-            container.appendChild(lineupItem);
-        });
+        // Refresh auto-load dropdown to include custom lineups
+        this.initializeAutoLoadDropdown();
+    }
+
+    // Auto-load lineup functionality
+    setAutoLoadLineup(lineupName) {
+        localStorage.setItem('autoLoadLineup', lineupName);
+        if (lineupName) {
+            this.showNotification(`Auto-load set to: ${lineupName.replace('-', ' ').toUpperCase()}`, 'success');
+        } else {
+            this.showNotification('Auto-load disabled', 'info');
+        }
+    }
+
+    getAutoLoadLineup() {
+        return localStorage.getItem('autoLoadLineup') || '';
+    }
+
+    loadAutoLineupIfSet() {
+        const autoLineup = this.getAutoLoadLineup();
+        if (autoLineup && autoLineup !== '') {
+            if (autoLineup.startsWith('custom:')) {
+                // Load custom lineup
+                const lineupName = autoLineup.replace('custom:', '');
+                this.loadCustomLineup(lineupName);
+            } else {
+                // Load default lineup
+                this.loadDefaultLineup(autoLineup);
+            }
+        }
+    }
+
+    initializeAutoLoadDropdown() {
+        const dropdown = document.getElementById('auto-load-lineup');
+        if (dropdown) {
+            // Clear existing options except the first one
+            dropdown.innerHTML = '<option value="">None</option>';
+
+            // Add default lineups
+            const defaultLineups = [
+                { value: 'steelers-default', name: 'Steelers' },
+                { value: 'i-formation', name: 'I-Formation' },
+                { value: 'shotgun', name: 'Shotgun' },
+                { value: 'pistol', name: 'Pistol' },
+                { value: 'wildcat', name: 'Wildcat' },
+                { value: 'goal-line', name: 'Goal Line' }
+            ];
+
+            defaultLineups.forEach(lineup => {
+                const option = document.createElement('option');
+                option.value = lineup.value;
+                option.textContent = lineup.name;
+                dropdown.appendChild(option);
+            });
+
+            // Add custom lineups
+            const customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
+            if (customLineups.length > 0) {
+                // Add separator
+                const separator = document.createElement('option');
+                separator.disabled = true;
+                separator.textContent = '── Custom Lineups ──';
+                dropdown.appendChild(separator);
+
+                customLineups.forEach(lineup => {
+                    const option = document.createElement('option');
+                    option.value = `custom:${lineup.name}`;
+                    option.textContent = lineup.name;
+                    dropdown.appendChild(option);
+                });
+            }
+
+            const currentAutoLoad = this.getAutoLoadLineup();
+            dropdown.value = currentAutoLoad;
+        }
     }
 
     initializeChart() {
@@ -614,6 +744,12 @@ class FootballChartApp {
         this.refreshCustomLineupsList();
         this.updateActionModeVisibility(this.currentTool);
         this.updateActionModeUI(this.currentActionMode);
+
+        // Initialize auto-load lineup dropdown
+        this.initializeAutoLoadDropdown();
+
+        // Load auto-lineup if set
+        this.loadAutoLineupIfSet();
 
         // Initialize change tracking
         this.setupChangeTracking();
@@ -1030,4 +1166,26 @@ if ('serviceWorker' in navigator) {
                 console.log('SW registration failed: ', registrationError);
             });
     });
+}
+
+// Global function for toolbar toggle (used in responsive design)
+function toggleToolbar() {
+    const toolbar = document.querySelector('.toolbar');
+    const isOpen = toolbar.classList.contains('open');
+
+    if (isOpen) {
+        toolbar.classList.remove('open');
+        // Remove overlay if it exists
+        const overlay = document.querySelector('.toolbar-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    } else {
+        toolbar.classList.add('open');
+        // Add overlay to close toolbar when clicking outside
+        const overlay = document.createElement('div');
+        overlay.className = 'toolbar-overlay';
+        overlay.onclick = () => toggleToolbar();
+        document.body.appendChild(overlay);
+    }
 }
