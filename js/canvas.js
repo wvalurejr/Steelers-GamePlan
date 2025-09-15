@@ -56,9 +56,13 @@ class CanvasManager {
         // Width should be proportional to football field width (53.3 yards)
         const fieldAspectRatio = 53.3 / 30; // width/height ratio for 30-yard field
 
-        let canvasHeight = Math.min(700, containerRect.height - 40);
+        // Significantly increase maximum height for realistic yard-to-player scaling
+        // Goal: Each yard should be large enough that a player position fits comfortably within it
+        // With 30 yards and 1200px height, each yard = 40px, making 18px radius players realistic
+        let canvasHeight = Math.min(1200, containerRect.height - 40); // Increased from 700 to 1200
         let canvasWidth = canvasHeight * fieldAspectRatio;
 
+        // Check if width exceeds container, if so scale down proportionally
         if (canvasWidth > containerRect.width - 40) {
             canvasWidth = containerRect.width - 40;
             canvasHeight = canvasWidth / fieldAspectRatio;
@@ -868,7 +872,7 @@ class CanvasManager {
         for (let element of this.elements) {
             if (element.type === 'position') {
                 const distance = this.distanceToLine({ x: element.x, y: element.y }, from, to);
-                if (distance < 25) { // Collision threshold (slightly larger than position radius)
+                if (distance < 20) { // Collision threshold (slightly larger than new position radius)
                     return true;
                 }
             }
@@ -1333,7 +1337,7 @@ class CanvasManager {
                 const distance = Math.sqrt(
                     Math.pow(x - element.x, 2) + Math.pow(y - element.y, 2)
                 );
-                if (distance <= 22) { // Updated to match larger shape radius
+                if (distance <= 18) { // Updated to match new position radius
                     return element;
                 }
             } else if (element.type === 'route' || element.type === 'block') {
@@ -1463,7 +1467,7 @@ class CanvasManager {
 
     drawPosition(position) {
         const { x, y, shape, color, name, player } = position;
-        const radius = 22; // Larger shapes for better visibility
+        const radius = 18; // Scaled down for more realistic proportions relative to yard lines
 
         this.ctx.fillStyle = color;
         this.ctx.strokeStyle = '#ffffff';
@@ -1849,7 +1853,7 @@ class CanvasManager {
             this.ctx.lineWidth = 3;
             this.ctx.beginPath();
 
-            const radius = 22; // Match the actual position size
+            const radius = 18; // Match the updated position size
 
             // Match the selection reticle to the position's shape with actual size
             switch (element.shape) {
@@ -1928,7 +1932,7 @@ class CanvasManager {
 
     loadPlayData(data) {
         this.elements = data.elements || [];
-        
+
         // Snap all positions to grid when loading
         this.elements.forEach(element => {
             if (element.type === 'position') {
@@ -1937,7 +1941,7 @@ class CanvasManager {
                 element.y = snapped.y;
             }
         });
-        
+
         this.selectedElement = null;
         this.render();
     }
@@ -2013,14 +2017,14 @@ class CanvasManager {
                     ...pos,
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
                 };
-                
+
                 // Snap position to grid when loading
                 if (element.type === 'position') {
                     const snapped = this.snapCoordinates(element.x, element.y);
                     element.x = snapped.x;
                     element.y = snapped.y;
                 }
-                
+
                 return element;
             });
             this.selectedElement = null;
@@ -2079,14 +2083,14 @@ class CanvasManager {
                     y: pos.y * height,
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
                 };
-                
+
                 // Snap position to grid when loading custom lineup
                 if (element.type === 'position') {
                     const snapped = this.snapCoordinates(element.x, element.y);
                     element.x = snapped.x;
                     element.y = snapped.y;
                 }
-                
+
                 return element;
             });
             this.selectedElement = null;
