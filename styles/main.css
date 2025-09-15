@@ -580,6 +580,11 @@ body {
     border: 1px solid var(--border-color);
 }
 
+.toolbar-toggle {
+    display: none;
+    /* Hidden by default, shown only on small screens */
+}
+
 .tool-section {
     margin-bottom: 20px;
 }
@@ -969,7 +974,100 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+
+/* Large tablets and small laptops - maintain full toolbar width as long as possible */
+@media (max-width: 1024px) and (min-width: 701px) {
+    .chart-workspace {
+        gap: 15px;
+        /* Reduce gap slightly to give more space */
+    }
+
+    .tool-section {
+        margin-bottom: 15px;
+        /* Compact sections more */
+    }
+
+    .tool-section h4 {
+        font-size: 0.85rem;
+        /* Slightly smaller headings */
+    }
+
+    /* Keep full 280px toolbar width - don't shrink until we hit the 700px popout threshold */
+}
+
+/* Auto-collapse breakpoint: When toolbar would be squeezed below 280px */
+/* This calculates: container width - gaps - canvas min-width < 280px toolbar */
+/* Approximately: 280px toolbar + 20px gap + 400px min canvas = 700px total needed */
+@media (max-width: 700px) {
+    .chart-workspace {
+        position: relative;
+    }
+
+    .toolbar {
+        position: absolute;
+        top: 0;
+        left: -280px;
+        /* Hidden by default */
+        width: 280px;
+        /* Keep full width in popout */
+        height: 100%;
+        z-index: 1000;
+        background: var(--bg-primary);
+        border-right: 1px solid var(--border-color);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        transition: left 0.3s ease;
+        border-radius: 0;
+        /* Remove border radius for full-height panel */
+    }
+
+    .toolbar.open {
+        left: 0;
+        /* Slide in when open */
+    }
+
+    .toolbar-toggle {
+        display: block;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        font-size: 0.9rem;
+        box-shadow: var(--box-shadow);
+    }
+
+    .toolbar-toggle:hover {
+        background: #e55a2b;
+    }
+
+    .canvas-container {
+        width: 100% !important;
+        margin-left: 0;
+    }
+
+    .toolbar-overlay {
+        display: none;
+        position: fixed;
+        top: var(--navbar-height);
+        left: 0;
+        width: 100%;
+        height: calc(100vh - var(--navbar-height));
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+
+    .toolbar.open~.toolbar-overlay {
+        display: block;
+    }
+}
+
+/* Mobile phones (max-width: 480px) - Additional mobile-specific adjustments */
+@media (max-width: 480px) {
     .hamburger {
         display: flex;
     }
@@ -1005,13 +1103,8 @@ body {
     }
 
     .chart-workspace {
-        flex-direction: column;
         height: auto;
-    }
-
-    .toolbar {
-        width: 100%;
-        margin-bottom: 20px;
+        /* Allow flexible height on very small screens */
     }
 
     #football-field {

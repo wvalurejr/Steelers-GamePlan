@@ -106,12 +106,13 @@
                 </div>
 
                 <div class="chart-workspace">
+                    <button class="toolbar-toggle" onclick="toggleToolbar()">☰ Tools</button>
                     <div class="toolbar">
                         <!-- Lineups Section - Now in left column -->
                         <div class="tool-section compact">
                             <h4>Lineups</h4>
                             <div class="lineup-grid">
-                                <button class="lineup-btn mini" data-lineup="linemen-only">Linemen</button>
+                                <button class="lineup-btn mini" data-lineup="steelers-default">Steelers</button>
                                 <button class="lineup-btn mini" data-lineup="i-formation">I-Form</button>
                                 <button class="lineup-btn mini" data-lineup="shotgun">Shotgun</button>
                                 <button class="lineup-btn mini" data-lineup="pistol">Pistol</button>
@@ -129,7 +130,7 @@
                                 <h5>Auto-Load Lineup</h5>
                                 <select id="auto-load-lineup">
                                     <option value="">None</option>
-                                    <option value="linemen-only">Linemen Only</option>
+                                    <option value="steelers-default">Steelers</option>
                                     <option value="i-formation">I-Formation</option>
                                     <option value="shotgun">Shotgun</option>
                                     <option value="pistol">Pistol</option>

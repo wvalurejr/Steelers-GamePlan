@@ -2,8 +2,8 @@
 // Positions face UP (towards top of screen), backfield is below offensive line
 
 const DEFAULT_LINEUPS = {
-    'linemen-only': {
-        name: 'Linemen Only',
+    'steelers-default': {
+        name: 'Steelers',
         description: 'Core offensive line with wingback and tight end',
         positions: [
             { name: 'LT', x: 0.35, y: 0.5, shape: 'circle', color: '#007BFF' },
@@ -12,7 +12,7 @@ const DEFAULT_LINEUPS = {
             { name: 'RG', x: 0.575, y: 0.5, shape: 'circle', color: '#007BFF' },
             { name: 'RT', x: 0.65, y: 0.5, shape: 'circle', color: '#007BFF' },
             { name: 'TE', x: 0.75, y: 0.5, shape: 'square', color: '#28A745' },
-            { name: 'WB', x: 0.25, y: 0.5, shape: 'square', color: '#28A745' }
+            { name: 'WB', x: 0.32, y: 0.56, shape: 'square', color: '#28A745' }
         ]
     },
     'i-formation': {

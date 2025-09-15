@@ -690,7 +690,7 @@ class FootballChartApp {
 
             // Add default lineups
             const defaultLineups = [
-                { value: 'linemen-only', name: 'Linemen Only' },
+                { value: 'steelers-default', name: 'Steelers' },
                 { value: 'i-formation', name: 'I-Formation' },
                 { value: 'shotgun', name: 'Shotgun' },
                 { value: 'pistol', name: 'Pistol' },
@@ -1166,4 +1166,26 @@ if ('serviceWorker' in navigator) {
                 console.log('SW registration failed: ', registrationError);
             });
     });
+}
+
+// Global function for toolbar toggle (used in responsive design)
+function toggleToolbar() {
+    const toolbar = document.querySelector('.toolbar');
+    const isOpen = toolbar.classList.contains('open');
+
+    if (isOpen) {
+        toolbar.classList.remove('open');
+        // Remove overlay if it exists
+        const overlay = document.querySelector('.toolbar-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    } else {
+        toolbar.classList.add('open');
+        // Add overlay to close toolbar when clicking outside
+        const overlay = document.createElement('div');
+        overlay.className = 'toolbar-overlay';
+        overlay.onclick = () => toggleToolbar();
+        document.body.appendChild(overlay);
+    }
 }
