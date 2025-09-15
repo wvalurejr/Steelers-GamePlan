@@ -39,7 +39,7 @@ class FootballChartApp {
             });
         });
 
-        // Add click handler for Steelers-GamePlan title
+        // Add click handler for Steelers GamePlan title
         if (navLogo) {
             navLogo.style.cursor = 'pointer';
             navLogo.addEventListener('click', (e) => {

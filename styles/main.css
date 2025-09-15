@@ -1,6 +1,6 @@
 /* CSS Variables for consistent theming */
 :root {
-    --primary-color: #E63E00;
+    --primary-color: #FF6B35;
     /* Darker vibrant orange */
     --secondary-color: #000000;
     --white: #FFFFFF;
@@ -52,7 +52,7 @@
 
 /* Dark theme variables */
 [data-theme="dark"] {
-    --primary-color: #E63E00;
+    --primary-color: #FF6B35;
     /* Same darker orange */
     --secondary-color: #FFFFFF;
     --white: #1A1A1A;

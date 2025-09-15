@@ -94,44 +94,47 @@ class CanvasManager {
         const width = this.canvas.width;
         const height = this.canvas.height;
 
-        // Field background
+        // Field background with grass texture
         this.ctx.fillStyle = '#2d5016';
         this.ctx.fillRect(0, 0, width, height);
+
+        // Add subtle grass texture
+        this.drawGrassTexture();
 
         // Field lines for vertical 30-yard field (15 yards each side of center)
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 2;
 
-        // Center line (at middle of field)
-        this.ctx.lineWidth = 3;
+        // Center line (50-yard line) - thicker and more prominent
+        this.ctx.lineWidth = 4;
         this.ctx.beginPath();
         this.ctx.moveTo(0, height / 2);
         this.ctx.lineTo(width, height / 2);
         this.ctx.stroke();
 
-        // 5-yard lines above center
-        this.ctx.lineWidth = 1;
+        // 5-yard lines above center (45, 40, 35 yard lines)
+        this.ctx.lineWidth = 1.5;
         for (let i = 1; i <= 3; i++) {
-            const y = height / 2 - (height / 6) * i; // 5, 10, 15 yard lines above center
+            const y = height / 2 - (height / 6) * i;
             this.ctx.beginPath();
             this.ctx.moveTo(0, y);
             this.ctx.lineTo(width, y);
             this.ctx.stroke();
         }
 
-        // 5-yard lines below center
+        // 5-yard lines below center (45, 40, 35 yard lines on other side)
         for (let i = 1; i <= 3; i++) {
-            const y = height / 2 + (height / 6) * i; // 5, 10, 15 yard lines below center
+            const y = height / 2 + (height / 6) * i;
             this.ctx.beginPath();
             this.ctx.moveTo(0, y);
             this.ctx.lineTo(width, y);
             this.ctx.stroke();
         }
 
-        // 10-yard lines (thicker)
-        this.ctx.lineWidth = 2;
-        const tenYardAbove = height / 2 - (height / 3); // 10 yard line above center
-        const tenYardBelow = height / 2 + (height / 3); // 10 yard line below center
+        // 10-yard lines (thicker) - these are the 40-yard lines
+        this.ctx.lineWidth = 3;
+        const tenYardAbove = height / 2 - (height / 3);
+        const tenYardBelow = height / 2 + (height / 3);
 
         this.ctx.beginPath();
         this.ctx.moveTo(0, tenYardAbove);
@@ -143,54 +146,151 @@ class CanvasManager {
         this.ctx.lineTo(width, tenYardBelow);
         this.ctx.stroke();
 
-        // Hash marks (horizontal lines across the field)
-        const hashLength = width * 0.08;
-        this.ctx.lineWidth = 1;
+        // Draw detailed hash marks
+        this.drawHashMarks();
 
-        // Draw hash marks every yard
-        for (let i = 0; i <= 6; i++) {
-            const yAbove = height / 2 - (height / 6) * i;
-            const yBelow = height / 2 + (height / 6) * i;
+        // Sidelines - thicker and more prominent
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(2, 0);
+        this.ctx.lineTo(2, height);
+        this.ctx.moveTo(width - 2, 0);
+        this.ctx.lineTo(width - 2, height);
+        this.ctx.stroke();
 
-            // Left hash marks
-            this.ctx.beginPath();
-            this.ctx.moveTo(width * 0.35, yAbove);
-            this.ctx.lineTo(width * 0.35 + hashLength, yAbove);
-            this.ctx.stroke();
+        // End lines (goal lines)
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, 2);
+        this.ctx.lineTo(width, 2);
+        this.ctx.moveTo(0, height - 2);
+        this.ctx.lineTo(width, height - 2);
+        this.ctx.stroke();
 
-            this.ctx.beginPath();
-            this.ctx.moveTo(width * 0.35, yBelow);
-            this.ctx.lineTo(width * 0.35 + hashLength, yBelow);
-            this.ctx.stroke();
+        // Add field crown effect (slight curve to simulate field crown)
+        this.drawFieldCrown();
+    }
 
-            // Right hash marks
-            this.ctx.beginPath();
-            this.ctx.moveTo(width * 0.65 - hashLength, yAbove);
-            this.ctx.lineTo(width * 0.65, yAbove);
-            this.ctx.stroke();
+    drawGrassTexture() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
 
-            this.ctx.beginPath();
-            this.ctx.moveTo(width * 0.65 - hashLength, yBelow);
-            this.ctx.lineTo(width * 0.65, yBelow);
-            this.ctx.stroke();
+        // Create subtle grass stripes
+        this.ctx.globalAlpha = 0.1;
+        this.ctx.fillStyle = '#1a3d0f';
+
+        const stripeWidth = width / 20;
+        for (let i = 0; i < 20; i += 2) {
+            this.ctx.fillRect(i * stripeWidth, 0, stripeWidth, height);
         }
 
-        // Sidelines
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, 0);
-        this.ctx.lineTo(0, height);
-        this.ctx.moveTo(width, 0);
-        this.ctx.lineTo(width, height);
-        this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
+    }
 
-        // End lines
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, 0);
-        this.ctx.lineTo(width, 0);
-        this.ctx.moveTo(0, height);
-        this.ctx.lineTo(width, height);
-        this.ctx.stroke();
+    drawHashMarks() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const hashLength = width * 0.08;
+
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+
+        // NCAA/NFL hash mark positions (closer to center than high school)
+        const leftHashX = width * 0.4;
+        const rightHashX = width * 0.6;
+
+        // Draw hash marks at every yard (every 6th of the field sections)
+        for (let section = 0; section <= 6; section++) {
+            const yAbove = height / 2 - (height / 6) * section;
+            const yBelow = height / 2 + (height / 6) * section;
+
+            if (section <= 3) { // Only draw for visible field area
+                // Left hash marks
+                this.ctx.beginPath();
+                this.ctx.moveTo(leftHashX - hashLength / 2, yAbove);
+                this.ctx.lineTo(leftHashX + hashLength / 2, yAbove);
+                this.ctx.stroke();
+
+                if (section > 0) { // Don't duplicate center line
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(leftHashX - hashLength / 2, yBelow);
+                    this.ctx.lineTo(leftHashX + hashLength / 2, yBelow);
+                    this.ctx.stroke();
+                }
+
+                // Right hash marks
+                this.ctx.beginPath();
+                this.ctx.moveTo(rightHashX - hashLength / 2, yAbove);
+                this.ctx.lineTo(rightHashX + hashLength / 2, yAbove);
+                this.ctx.stroke();
+
+                if (section > 0) { // Don't duplicate center line
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(rightHashX - hashLength / 2, yBelow);
+                    this.ctx.lineTo(rightHashX + hashLength / 2, yBelow);
+                    this.ctx.stroke();
+                }
+            }
+        }
+
+        // Add smaller tick marks between major lines
+        this.ctx.lineWidth = 1;
+        const tickLength = hashLength * 0.4;
+
+        for (let section = 0; section < 6; section++) {
+            for (let tick = 1; tick < 5; tick++) {
+                const yOffset = (height / 6) * (tick / 5);
+                const yAbove = height / 2 - (height / 6) * section - yOffset;
+                const yBelow = height / 2 + (height / 6) * section + yOffset;
+
+                if (yAbove > 0 && yAbove < height && section < 3) {
+                    // Left side ticks
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(leftHashX - tickLength / 2, yAbove);
+                    this.ctx.lineTo(leftHashX + tickLength / 2, yAbove);
+                    this.ctx.stroke();
+
+                    // Right side ticks
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(rightHashX - tickLength / 2, yAbove);
+                    this.ctx.lineTo(rightHashX + tickLength / 2, yAbove);
+                    this.ctx.stroke();
+                }
+
+                if (yBelow > 0 && yBelow < height && section < 3) {
+                    // Left side ticks
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(leftHashX - tickLength / 2, yBelow);
+                    this.ctx.lineTo(leftHashX + tickLength / 2, yBelow);
+                    this.ctx.stroke();
+
+                    // Right side ticks
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(rightHashX - tickLength / 2, yBelow);
+                    this.ctx.lineTo(rightHashX + tickLength / 2, yBelow);
+                    this.ctx.stroke();
+                }
+            }
+        }
+    }
+
+    drawFieldCrown() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+
+        // Add subtle shading to simulate field crown (higher in the middle)
+        this.ctx.globalAlpha = 0.05;
+
+        const gradient = this.ctx.createLinearGradient(0, 0, width, 0);
+        gradient.addColorStop(0, '#000000');
+        gradient.addColorStop(0.2, 'transparent');
+        gradient.addColorStop(0.8, 'transparent');
+        gradient.addColorStop(1, '#000000');
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, width, height);
+
+        this.ctx.globalAlpha = 1.0;
     }
 
     handleMouseDown(e) {
