@@ -230,11 +230,15 @@ class FootballChartApp {
             this.importPlay(e.target.files[0]);
         });
 
-        // Window resize handler
+        // Window resize handler with debouncing
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            if (window.canvasManager) {
-                window.canvasManager.handleResize();
-            }
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (window.canvasManager) {
+                    window.canvasManager.handleResize();
+                }
+            }, 100); // 100ms debounce
         });
     }
 

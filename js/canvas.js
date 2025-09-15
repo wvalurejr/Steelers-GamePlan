@@ -90,6 +90,18 @@ class CanvasManager {
         this.canvas.addEventListener('touchmove', (e) => e.preventDefault());
     }
 
+    // Helper method to get accurate canvas coordinates
+    getCanvasCoordinates(clientX, clientY) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
     drawField() {
         const width = this.canvas.width;
         const height = this.canvas.height;
@@ -299,9 +311,9 @@ class CanvasManager {
             return;
         }
 
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+        const x = coords.x;
+        const y = coords.y;
 
         this.startX = x;
         this.startY = y;
@@ -323,9 +335,9 @@ class CanvasManager {
     }
 
     handleMouseMove(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+        const x = coords.x;
+        const y = coords.y;
 
         // Check if we should start dragging based on threshold
         if (this.potentialDrag && this.selectedElement && this.actionMode === 'move' && !this.isDragging) {
@@ -438,9 +450,9 @@ class CanvasManager {
             return;
         }
 
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+        const x = coords.x;
+        const y = coords.y;
 
         // If we're editing a route point, complete the edit
         if (this.editingRoutePoint && this.editingRoute && this.previewPoint) {
@@ -508,9 +520,9 @@ class CanvasManager {
     handleRightClick(e) {
         e.preventDefault(); // Prevent context menu
 
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const coords = this.getCanvasCoordinates(e.clientX, e.clientY);
+        const x = coords.x;
+        const y = coords.y;
 
         // If we're in route drawing mode, add final point and finish the route
         if (this.routeDrawingMode && this.activeRoute) {
@@ -1925,6 +1937,8 @@ class CanvasManager {
             }
         });
 
+        // Force a complete redraw
+        this.drawField();
         this.render();
     }
 
