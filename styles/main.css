@@ -1,7 +1,6 @@
 /* CSS Variables for consistent theming */
 :root {
-    --primary-color: #FF4500;
-    /* Bright neon orange */
+    --primary-color: #E63E00;  /* Darker vibrant orange */
     --secondary-color: #000000;
     --white: #FFFFFF;
     --light-gray: #F8F9FA;
@@ -52,8 +51,7 @@
 
 /* Dark theme variables */
 [data-theme="dark"] {
-    --primary-color: #FF4500;
-    /* Same bright neon orange */
+    --primary-color: #E63E00;  /* Same darker orange */
     --secondary-color: #FFFFFF;
     --white: #1A1A1A;
     --light-gray: #2D2D2D;
@@ -114,10 +112,9 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #E63E00;
-    /* Darker shade of bright orange */
+    background-color: #CC3700;  /* Even darker shade */
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.4);
+    box-shadow: 0 4px 15px rgba(230, 62, 0, 0.4);
 }
 
 .btn-secondary {

@@ -5,7 +5,7 @@ class FootballChartApp {
         this.currentTool = 'select';
         this.currentActionMode = 'move'; // 'move', 'route', 'block'
         this.currentShape = 'circle';
-        this.currentColor = '#FF4500'; // Default to bright neon orange
+        this.currentColor = '#E63E00'; // Default to darker orange
         this.collisionAvoidance = true;
         this.snapToGrid = true; // Default snap to grid enabled
         this.hasUnsavedChanges = false; // Track unsaved changes
@@ -73,8 +73,8 @@ class FootballChartApp {
         document.documentElement.setAttribute('data-theme', currentTheme);
         themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
 
-        // Set default highlight color to bright neon orange
-        this.currentColor = '#FF4500';
+        // Set default highlight color to darker orange
+        this.currentColor = '#E63E00';
 
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');

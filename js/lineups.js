@@ -20,7 +20,7 @@ const DEFAULT_LINEUPS = {
         description: 'Traditional formation with fullback',
         positions: [
             // Backfield (below offensive line)
-            { name: 'QB', x: 0.5, y: 0.55, shape: 'circle', color: '#FF4500' },
+            { name: 'QB', x: 0.5, y: 0.55, shape: 'circle', color: '#E63E00' },
             { name: 'RB', x: 0.5, y: 0.65, shape: 'circle', color: '#000000' },
             { name: 'FB', x: 0.5, y: 0.75, shape: 'square', color: '#000000' },
             // Offensive line
@@ -40,7 +40,7 @@ const DEFAULT_LINEUPS = {
         description: 'Spread formation with multiple receivers',
         positions: [
             // Backfield (below offensive line)
-            { name: 'QB', x: 0.5, y: 0.6, shape: 'circle', color: '#FF4500' },
+            { name: 'QB', x: 0.5, y: 0.6, shape: 'circle', color: '#E63E00' },
             { name: 'RB', x: 0.35, y: 0.55, shape: 'circle', color: '#000000' },
             // Offensive line
             { name: 'LT', x: 0.35, y: 0.5, shape: 'circle', color: '#007BFF' },
@@ -60,7 +60,7 @@ const DEFAULT_LINEUPS = {
         description: 'Hybrid formation',
         positions: [
             // Backfield (below offensive line)
-            { name: 'QB', x: 0.5, y: 0.55, shape: 'circle', color: '#FF4500' },
+            { name: 'QB', x: 0.5, y: 0.55, shape: 'circle', color: '#E63E00' },
             { name: 'RB', x: 0.5, y: 0.65, shape: 'circle', color: '#000000' },
             // Offensive line
             { name: 'LT', x: 0.35, y: 0.5, shape: 'circle', color: '#007BFF' },
@@ -100,7 +100,7 @@ const DEFAULT_LINEUPS = {
         description: 'Heavy formation for short yardage',
         positions: [
             // Backfield (below offensive line)
-            { name: 'QB', x: 0.5, y: 0.55, shape: 'circle', color: '#FF4500' },
+            { name: 'QB', x: 0.5, y: 0.55, shape: 'circle', color: '#E63E00' },
             { name: 'RB', x: 0.5, y: 0.65, shape: 'circle', color: '#000000' },
             { name: 'FB', x: 0.5, y: 0.75, shape: 'square', color: '#000000' },
             // Offensive line (tighter formation)
