@@ -479,6 +479,8 @@ class CanvasManager {
                 window.footballApp.markAsChanged();
             }
 
+            this.isDragging = false;
+
             this.render();
         }
 
@@ -1512,8 +1514,8 @@ class CanvasManager {
         }
 
         // Draw coordinates above position using the same x and y as the lineup
-        this.ctx.fillStyle = '#000000';
-        this.ctx.font = '10px Arial';
+        this.ctx.fillStyle = '#FF6B35';
+        this.ctx.font = '12px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'bottom';
         const coordText = `(${Math.round(x)}, ${Math.round(y)})`;

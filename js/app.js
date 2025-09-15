@@ -18,7 +18,8 @@ class FootballChartApp {
         this.setupEventListeners();
         this.setupThemeToggle();
         this.loadStoredPlays();
-        this.showPage('home');
+        this.setupRouting();
+        this.loadInitialPage();
     }
 
     setupNavigation() {
@@ -252,6 +253,9 @@ class FootballChartApp {
             // Update navigation highlighting
             this.updateNavigationForPage(pageId);
 
+            // Update URL hash
+            this.updateURL(pageId);
+
             // Initialize page-specific functionality
             switch (pageId) {
                 case 'chart':
@@ -361,6 +365,48 @@ class FootballChartApp {
         const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
         if (activeLink) {
             activeLink.classList.add('active');
+        }
+    }
+
+    // URL Routing Methods
+    setupRouting() {
+        // Listen for hash changes
+        window.addEventListener('hashchange', () => {
+            this.handleRouteChange();
+        });
+
+        // Listen for browser back/forward buttons
+        window.addEventListener('popstate', () => {
+            this.handleRouteChange();
+        });
+    }
+
+    loadInitialPage() {
+        // Check URL hash on startup and navigate to appropriate page
+        const hash = window.location.hash.substring(1); // Remove the # symbol
+        
+        if (hash && ['home', 'chart', 'library'].includes(hash)) {
+            this.showPage(hash);
+        } else {
+            // Default to home page if no valid hash
+            this.showPage('home');
+            this.updateURL('home');
+        }
+    }
+
+    handleRouteChange() {
+        // Handle URL hash changes
+        const hash = window.location.hash.substring(1);
+        
+        if (hash && ['home', 'chart', 'library'].includes(hash)) {
+            this.showPage(hash);
+        }
+    }
+
+    updateURL(pageId) {
+        // Update URL hash without triggering navigation
+        if (window.location.hash !== `#${pageId}`) {
+            window.history.pushState(null, null, `#${pageId}`);
         }
     }
 
