@@ -687,7 +687,7 @@ class FootballChartApp {
         if (dropdown) {
             // Clear existing options except the first one
             dropdown.innerHTML = '<option value="">None</option>';
-            
+
             // Add default lineups
             const defaultLineups = [
                 { value: 'linemen-only', name: 'Linemen Only' },
@@ -697,14 +697,14 @@ class FootballChartApp {
                 { value: 'wildcat', name: 'Wildcat' },
                 { value: 'goal-line', name: 'Goal Line' }
             ];
-            
+
             defaultLineups.forEach(lineup => {
                 const option = document.createElement('option');
                 option.value = lineup.value;
                 option.textContent = lineup.name;
                 dropdown.appendChild(option);
             });
-            
+
             // Add custom lineups
             const customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
             if (customLineups.length > 0) {
@@ -713,7 +713,7 @@ class FootballChartApp {
                 separator.disabled = true;
                 separator.textContent = '── Custom Lineups ──';
                 dropdown.appendChild(separator);
-                
+
                 customLineups.forEach(lineup => {
                     const option = document.createElement('option');
                     option.value = `custom:${lineup.name}`;
@@ -721,7 +721,7 @@ class FootballChartApp {
                     dropdown.appendChild(option);
                 });
             }
-            
+
             const currentAutoLoad = this.getAutoLoadLineup();
             dropdown.value = currentAutoLoad;
         }

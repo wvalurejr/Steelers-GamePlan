@@ -12,7 +12,7 @@ class CanvasManager {
         this.dragThreshold = 8; // pixels (increased from 5 for less sensitivity)
         this.dragStartPosition = { x: 0, y: 0 };
         this.tool = 'select';
-        this.actionMode = 'edit'; // 'edit', 'move', 'route', 'block'
+        this.actionMode = 'move'; // 'edit', 'move', 'route', 'block'
         this.shape = 'circle';
         this.color = '#000000';
         this.isDrawing = false;
@@ -93,26 +93,26 @@ class CanvasManager {
     // Helper method to get accurate canvas coordinates
     getCanvasCoordinates(clientX, clientY) {
         const rect = this.canvas.getBoundingClientRect();
-        
+
         // Get computed styles to account for borders and padding
         const computedStyle = window.getComputedStyle(this.canvas);
         const borderLeft = parseInt(computedStyle.borderLeftWidth) || 0;
         const borderTop = parseInt(computedStyle.borderTopWidth) || 0;
-        
+
         // Calculate the actual canvas content area
         const canvasContentWidth = rect.width - (borderLeft * 2);
         const canvasContentHeight = rect.height - (borderTop * 2);
-        
+
         // Calculate scaling factors
         const scaleX = this.canvas.width / canvasContentWidth;
         const scaleY = this.canvas.height / canvasContentHeight;
-        
+
         // Adjust for borders and calculate scaled coordinates
         const x = (clientX - rect.left - borderLeft) * scaleX;
         const y = (clientY - rect.top - borderTop) * scaleY;
-        
+
         return { x, y };
-    }    drawField() {
+    } drawField() {
         const width = this.canvas.width;
         const height = this.canvas.height;
 
@@ -477,7 +477,7 @@ class CanvasManager {
         }
 
         // If we're dragging a position in move mode, drop it at the current location
-        if (this.isDragging && this.selectedElement && this.actionMode === 'move') {
+        if ((this.isDragging || this.potentialDrag) && this.selectedElement && this.actionMode === 'move') {
             console.log('Dropping element to new position...');
             let newX = x - this.dragOffset.x;
             let newY = y - this.dragOffset.y;
@@ -501,7 +501,9 @@ class CanvasManager {
                 window.footballApp.markAsChanged();
             }
 
+            // Stop moving the position
             this.isDragging = false;
+            this.potentialDrag = false;
 
             this.render();
         }
@@ -1239,7 +1241,7 @@ class CanvasManager {
             name: document.getElementById('position-name')?.value || '',
             player: document.getElementById('player-name')?.value || '',
             id: Date.now().toString()
-        };        this.elements.push(position);
+        }; this.elements.push(position);
         this.selectedElement = position;
         this.render();
 
@@ -1926,6 +1928,16 @@ class CanvasManager {
 
     loadPlayData(data) {
         this.elements = data.elements || [];
+        
+        // Snap all positions to grid when loading
+        this.elements.forEach(element => {
+            if (element.type === 'position') {
+                const snapped = this.snapCoordinates(element.x, element.y);
+                element.x = snapped.x;
+                element.y = snapped.y;
+            }
+        });
+        
         this.selectedElement = null;
         this.render();
     }
@@ -1996,10 +2008,21 @@ class CanvasManager {
         const lineup = lineups[lineupName];
 
         if (lineup) {
-            this.elements = lineup.map(pos => ({
-                ...pos,
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-            }));
+            this.elements = lineup.map(pos => {
+                const element = {
+                    ...pos,
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+                };
+                
+                // Snap position to grid when loading
+                if (element.type === 'position') {
+                    const snapped = this.snapCoordinates(element.x, element.y);
+                    element.x = snapped.x;
+                    element.y = snapped.y;
+                }
+                
+                return element;
+            });
             this.selectedElement = null;
             this.render();
         }
@@ -2048,13 +2071,24 @@ class CanvasManager {
             const height = this.canvas.height;
 
             // Convert relative coordinates back to absolute coordinates
-            this.elements = lineup.positions.map(pos => ({
-                ...pos,
-                // Convert from relative coordinates to current canvas coordinates
-                x: pos.x * width,
-                y: pos.y * height,
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-            }));
+            this.elements = lineup.positions.map(pos => {
+                const element = {
+                    ...pos,
+                    // Convert from relative coordinates to current canvas coordinates
+                    x: pos.x * width,
+                    y: pos.y * height,
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+                };
+                
+                // Snap position to grid when loading custom lineup
+                if (element.type === 'position') {
+                    const snapped = this.snapCoordinates(element.x, element.y);
+                    element.x = snapped.x;
+                    element.y = snapped.y;
+                }
+                
+                return element;
+            });
             this.selectedElement = null;
             this.render();
             return true;
