@@ -1,3 +1,6 @@
+// Import Firebase service
+import { FirebaseService } from './firebase-service.js';
+
 // Canvas Manager for Football Field Drawing
 class CanvasManager {
     constructor(canvasId) {
@@ -37,10 +40,16 @@ class CanvasManager {
         this.editingBlock = null; // The block being edited
         this.editingBlockPointIndex = -1; // The index of the block point being edited
 
+        // Firebase service instance
+        this.firebaseService = null;
+
         this.init();
     }
 
     init() {
+        // Get Firebase service instance
+        this.firebaseService = FirebaseService.getInstance();
+        
         this.setupCanvas();
         this.setupEventListeners();
         this.drawField();
@@ -2032,7 +2041,7 @@ class CanvasManager {
         }
     }
 
-    saveCustomLineup(name) {
+    async saveCustomLineup(name) {
         if (!name.trim()) return false;
 
         const width = this.canvas.width;
@@ -2052,58 +2061,98 @@ class CanvasManager {
             created: new Date().toISOString()
         };
 
-        let customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
-
-        // Remove existing lineup with same name
-        customLineups = customLineups.filter(lineup => lineup.name !== name);
-        customLineups.push(lineupData);
-
-        localStorage.setItem('customLineups', JSON.stringify(customLineups));
-        return true;
-    }
-
-    getCustomLineups() {
-        return JSON.parse(localStorage.getItem('customLineups') || '[]');
-    }
-
-    loadCustomLineup(name) {
-        const customLineups = this.getCustomLineups();
-        const lineup = customLineups.find(l => l.name === name);
-
-        if (lineup) {
-            const width = this.canvas.width;
-            const height = this.canvas.height;
-
-            // Convert relative coordinates back to absolute coordinates
-            this.elements = lineup.positions.map(pos => {
-                const element = {
-                    ...pos,
-                    // Convert from relative coordinates to current canvas coordinates
-                    x: pos.x * width,
-                    y: pos.y * height,
-                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-                };
-
-                // Snap position to grid when loading custom lineup
-                if (element.type === 'position') {
-                    const snapped = this.snapCoordinates(element.x, element.y);
-                    element.x = snapped.x;
-                    element.y = snapped.y;
-                }
-
-                return element;
-            });
-            this.selectedElement = null;
-            this.render();
+        try {
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                // Use Firebase
+                await this.firebaseService.saveCustomLineup(lineupData);
+            } else {
+                // Fallback to localStorage
+                let customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
+                // Remove existing lineup with same name
+                customLineups = customLineups.filter(lineup => lineup.name !== name);
+                customLineups.push(lineupData);
+                localStorage.setItem('customLineups', JSON.stringify(customLineups));
+            }
+            return true;
+        } catch (error) {
+            console.error('Error saving custom lineup:', error);
+            // Fallback to localStorage on error
+            let customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
+            customLineups = customLineups.filter(lineup => lineup.name !== name);
+            customLineups.push(lineupData);
+            localStorage.setItem('customLineups', JSON.stringify(customLineups));
             return true;
         }
-        return false;
     }
 
-    deleteCustomLineup(name) {
-        let customLineups = this.getCustomLineups();
-        customLineups = customLineups.filter(lineup => lineup.name !== name);
-        localStorage.setItem('customLineups', JSON.stringify(customLineups));
+    async getCustomLineups() {
+        try {
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                return await this.firebaseService.getCustomLineups();
+            } else {
+                return JSON.parse(localStorage.getItem('customLineups') || '[]');
+            }
+        } catch (error) {
+            console.error('Error getting custom lineups:', error);
+            return JSON.parse(localStorage.getItem('customLineups') || '[]');
+        }
+    }
+
+    async loadCustomLineup(name) {
+        try {
+            const customLineups = await this.getCustomLineups();
+            const lineup = customLineups.find(l => l.name === name);
+
+            if (lineup) {
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+
+                // Convert relative coordinates back to absolute coordinates
+                this.elements = lineup.positions.map(pos => {
+                    const element = {
+                        ...pos,
+                        // Convert from relative coordinates to current canvas coordinates
+                        x: pos.x * width,
+                        y: pos.y * height,
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+                    };
+
+                    // Snap position to grid when loading custom lineup
+                    if (element.type === 'position') {
+                        const snapped = this.snapCoordinates(element.x, element.y);
+                        element.x = snapped.x;
+                        element.y = snapped.y;
+                    }
+
+                    return element;
+                });
+                this.selectedElement = null;
+                this.render();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error loading custom lineup:', error);
+            return false;
+        }
+    }
+
+    async deleteCustomLineup(name) {
+        try {
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                await this.firebaseService.deleteCustomLineup(name);
+            } else {
+                let customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
+                customLineups = customLineups.filter(lineup => lineup.name !== name);
+                localStorage.setItem('customLineups', JSON.stringify(customLineups));
+            }
+        } catch (error) {
+            console.error('Error deleting custom lineup:', error);
+            // Fallback to localStorage on error
+            let customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
+            customLineups = customLineups.filter(lineup => lineup.name !== name);
+            localStorage.setItem('customLineups', JSON.stringify(customLineups));
+        }
     }
 
     // Action mode control methods
@@ -2266,6 +2315,12 @@ class CanvasManager {
         }
     }
 }
+
+// Export the class for ES6 module usage
+export { CanvasManager };
+
+// Also add to window for backward compatibility
+window.CanvasManager = CanvasManager;
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {

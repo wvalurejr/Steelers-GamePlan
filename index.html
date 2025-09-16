@@ -493,10 +493,48 @@
         </div>
     </main>
 
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- App Scripts as ES6 Modules -->
+    <script type="module" src="js/firebase-service.js"></script>
     <script src="js/lineups.js"></script>
-    <script src="js/app.js"></script>
-    <script src="js/canvas.js"></script>
-    <script src="js/library.js"></script>
+    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/canvas.js"></script>
+    <script type="module" src="js/library.js"></script>
+    
+    <!-- Initialize App -->
+    <script type="module">
+        import { FirebaseService } from './js/firebase-service.js';
+        import { FootballChartApp } from './js/app.js';
+        import { CanvasManager } from './js/canvas.js';
+        import { LibraryManager } from './js/library.js';
+        
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Initialize Firebase first
+                const firebaseService = FirebaseService.getInstance();
+                await firebaseService.initialize();
+                console.log('Firebase initialized successfully');
+                
+                // Start the app
+                window.footballApp = new FootballChartApp();
+                window.libraryManager = new LibraryManager();
+                window.libraryManager.init();
+                
+                console.log('App initialized successfully');
+            } catch (error) {
+                console.warn('Firebase initialization failed, continuing with localStorage fallback:', error);
+                
+                // Start the app without Firebase
+                window.footballApp = new FootballChartApp();
+                window.libraryManager = new LibraryManager();
+                window.libraryManager.init();
+            }
+        });
+    </script>
 </body>
 
 </html>

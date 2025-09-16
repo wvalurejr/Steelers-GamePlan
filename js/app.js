@@ -1,3 +1,6 @@
+// Import Firebase service
+import { FirebaseService } from './firebase-service.js';
+
 // Main Application Controller
 class FootballChartApp {
     constructor() {
@@ -10,14 +13,24 @@ class FootballChartApp {
         this.snapToGrid = true; // Default snap to grid enabled
         this.hasUnsavedChanges = false; // Track unsaved changes
         this.lastSavedState = null; // Store last saved state for comparison
+        this.firebaseService = null; // Firebase service instance
         this.init();
     }
 
-    init() {
+    async init() {
+        // Initialize Firebase first
+        try {
+            this.firebaseService = FirebaseService.getInstance();
+            await this.firebaseService.initialize();
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.warn('Firebase initialization failed, falling back to localStorage:', error);
+        }
+
         this.setupNavigation();
         this.setupEventListeners();
         this.setupThemeToggle();
-        this.loadStoredPlays();
+        await this.loadStoredPlays();
         this.setupRouting();
         this.loadInitialPage();
     }
@@ -242,7 +255,7 @@ class FootballChartApp {
         });
     }
 
-    showPage(pageId) {
+    async showPage(pageId) {
         // Hide all pages
         document.querySelectorAll('.page').forEach(page => {
             page.classList.remove('active');
@@ -263,7 +276,7 @@ class FootballChartApp {
             // Initialize page-specific functionality
             switch (pageId) {
                 case 'chart':
-                    this.initializeChart();
+                    await this.initializeChart();
                     break;
                 case 'library':
                     this.initializeLibrary();
@@ -585,7 +598,7 @@ class FootballChartApp {
         }
     }
 
-    saveCustomLineup() {
+    async saveCustomLineup() {
         const lineupName = document.getElementById('lineup-name')?.value.trim();
 
         if (!lineupName) {
@@ -594,60 +607,80 @@ class FootballChartApp {
         }
 
         if (window.canvasManager) {
-            const success = window.canvasManager.saveCustomLineup(lineupName);
-            if (success) {
-                this.showNotification(`Lineup "${lineupName}" saved!`, 'success');
-                document.getElementById('lineup-name').value = '';
-                this.refreshCustomLineupsList();
-            } else {
-                this.showNotification('Failed to save lineup', 'error');
+            try {
+                const success = await window.canvasManager.saveCustomLineup(lineupName);
+                if (success) {
+                    this.showNotification(`Lineup "${lineupName}" saved!`, 'success');
+                    document.getElementById('lineup-name').value = '';
+                    await this.refreshCustomLineupsList();
+                } else {
+                    this.showNotification('Failed to save lineup', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving custom lineup:', error);
+                this.showNotification('Error saving lineup. Please try again.', 'error');
             }
         }
     }
 
-    loadCustomLineup(lineupName) {
+    async loadCustomLineup(lineupName) {
         if (window.canvasManager) {
-            const success = window.canvasManager.loadCustomLineup(lineupName);
-            if (success) {
-                this.showNotification(`Custom lineup "${lineupName}" loaded!`, 'success');
-            } else {
-                this.showNotification('Failed to load lineup', 'error');
+            try {
+                const success = await window.canvasManager.loadCustomLineup(lineupName);
+                if (success) {
+                    this.showNotification(`Custom lineup "${lineupName}" loaded!`, 'success');
+                } else {
+                    this.showNotification('Failed to load lineup', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading custom lineup:', error);
+                this.showNotification('Error loading lineup. Please try again.', 'error');
             }
         }
     }
 
-    deleteCustomLineup(lineupName) {
+    async deleteCustomLineup(lineupName) {
         if (confirm(`Are you sure you want to delete the lineup "${lineupName}"?`)) {
             if (window.canvasManager) {
-                window.canvasManager.deleteCustomLineup(lineupName);
-                this.showNotification(`Lineup "${lineupName}" deleted!`, 'success');
-                this.refreshCustomLineupsList();
+                try {
+                    await window.canvasManager.deleteCustomLineup(lineupName);
+                    this.showNotification(`Lineup "${lineupName}" deleted!`, 'success');
+                    await this.refreshCustomLineupsList();
+                } catch (error) {
+                    console.error('Error deleting custom lineup:', error);
+                    this.showNotification('Error deleting lineup. Please try again.', 'error');
+                }
             }
         }
     }
 
-    refreshCustomLineupsList() {
+    async refreshCustomLineupsList() {
         const container = document.getElementById('saved-lineups');
         if (!container || !window.canvasManager) return;
 
-        const customLineups = window.canvasManager.getCustomLineups();
-        container.innerHTML = '';
+        try {
+            const customLineups = await window.canvasManager.getCustomLineups();
+            container.innerHTML = '';
 
-        if (customLineups.length === 0) {
-            container.innerHTML = '<p class="no-lineups">No saved lineups</p>';
-        } else {
-            customLineups.forEach(lineup => {
-                const lineupItem = document.createElement('div');
-                lineupItem.className = 'lineup-item';
-                lineupItem.innerHTML = `
-                    <span class="lineup-name">${lineup.name}</span>
-                    <div class="lineup-actions">
-                        <button class="btn btn-xs" onclick="window.footballApp.loadCustomLineup('${lineup.name}')">Load</button>
-                        <button class="btn btn-xs btn-danger" onclick="window.footballApp.deleteCustomLineup('${lineup.name}')">Delete</button>
-                    </div>
-                `;
-                container.appendChild(lineupItem);
-            });
+            if (customLineups.length === 0) {
+                container.innerHTML = '<p class="no-lineups">No saved lineups</p>';
+            } else {
+                customLineups.forEach(lineup => {
+                    const lineupItem = document.createElement('div');
+                    lineupItem.className = 'lineup-item';
+                    lineupItem.innerHTML = `
+                        <span class="lineup-name">${lineup.name}</span>
+                        <div class="lineup-actions">
+                            <button class="btn btn-xs" onclick="window.footballApp.loadCustomLineup('${lineup.name}')">Load</button>
+                            <button class="btn btn-xs btn-danger" onclick="window.footballApp.deleteCustomLineup('${lineup.name}')">Delete</button>
+                        </div>
+                    `;
+                    container.appendChild(lineupItem);
+                });
+            }
+        } catch (error) {
+            console.error('Error refreshing custom lineups list:', error);
+            container.innerHTML = '<p class="error">Error loading lineups</p>';
         }
 
         // Refresh auto-load dropdown to include custom lineups
@@ -655,34 +688,58 @@ class FootballChartApp {
     }
 
     // Auto-load lineup functionality
-    setAutoLoadLineup(lineupName) {
-        localStorage.setItem('autoLoadLineup', lineupName);
-        if (lineupName) {
-            this.showNotification(`Auto-load set to: ${lineupName.replace('-', ' ').toUpperCase()}`, 'success');
-        } else {
-            this.showNotification('Auto-load disabled', 'info');
-        }
-    }
-
-    getAutoLoadLineup() {
-        return localStorage.getItem('autoLoadLineup') || '';
-    }
-
-    loadAutoLineupIfSet() {
-        const autoLineup = this.getAutoLoadLineup();
-        if (autoLineup && autoLineup !== '') {
-            if (autoLineup.startsWith('custom:')) {
-                // Load custom lineup
-                const lineupName = autoLineup.replace('custom:', '');
-                this.loadCustomLineup(lineupName);
+    async setAutoLoadLineup(lineupName) {
+        try {
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                await this.firebaseService.saveSetting('autoLoadLineup', lineupName);
             } else {
-                // Load default lineup
-                this.loadDefaultLineup(autoLineup);
+                localStorage.setItem('autoLoadLineup', lineupName);
             }
+            
+            if (lineupName) {
+                this.showNotification(`Auto-load set to: ${lineupName.replace('-', ' ').toUpperCase()}`, 'success');
+            } else {
+                this.showNotification('Auto-load disabled', 'info');
+            }
+        } catch (error) {
+            console.error('Error setting auto-load lineup:', error);
+            // Fallback to localStorage
+            localStorage.setItem('autoLoadLineup', lineupName);
         }
     }
 
-    initializeAutoLoadDropdown() {
+    async getAutoLoadLineup() {
+        try {
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                return await this.firebaseService.getSetting('autoLoadLineup') || '';
+            } else {
+                return localStorage.getItem('autoLoadLineup') || '';
+            }
+        } catch (error) {
+            console.error('Error getting auto-load lineup:', error);
+            return localStorage.getItem('autoLoadLineup') || '';
+        }
+    }
+
+    async loadAutoLineupIfSet() {
+        try {
+            const autoLineup = await this.getAutoLoadLineup();
+            if (autoLineup && autoLineup !== '') {
+                if (autoLineup.startsWith('custom:')) {
+                    // Load custom lineup
+                    const lineupName = autoLineup.replace('custom:', '');
+                    await this.loadCustomLineup(lineupName);
+                } else {
+                    // Load default lineup
+                    this.loadDefaultLineup(autoLineup);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading auto lineup:', error);
+        }
+    }
+
+    async initializeAutoLoadDropdown() {
         const dropdown = document.getElementById('auto-load-lineup');
         if (dropdown) {
             // Clear existing options except the first one
@@ -706,28 +763,38 @@ class FootballChartApp {
             });
 
             // Add custom lineups
-            const customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
-            if (customLineups.length > 0) {
-                // Add separator
-                const separator = document.createElement('option');
-                separator.disabled = true;
-                separator.textContent = '── Custom Lineups ──';
-                dropdown.appendChild(separator);
+            try {
+                let customLineups = [];
+                if (this.firebaseService && this.firebaseService.isInitialized()) {
+                    customLineups = await this.firebaseService.getCustomLineups();
+                } else {
+                    customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
+                }
+                
+                if (customLineups.length > 0) {
+                    // Add separator
+                    const separator = document.createElement('option');
+                    separator.disabled = true;
+                    separator.textContent = '── Custom Lineups ──';
+                    dropdown.appendChild(separator);
 
-                customLineups.forEach(lineup => {
-                    const option = document.createElement('option');
-                    option.value = `custom:${lineup.name}`;
-                    option.textContent = lineup.name;
-                    dropdown.appendChild(option);
-                });
+                    customLineups.forEach(lineup => {
+                        const option = document.createElement('option');
+                        option.value = `custom:${lineup.name}`;
+                        option.textContent = lineup.name;
+                        dropdown.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading custom lineups for dropdown:', error);
             }
 
-            const currentAutoLoad = this.getAutoLoadLineup();
+            const currentAutoLoad = await this.getAutoLoadLineup();
             dropdown.value = currentAutoLoad;
         }
     }
 
-    initializeChart() {
+    async initializeChart() {
         if (!window.canvasManager) {
             window.canvasManager = new CanvasManager('football-field');
         }
@@ -741,15 +808,15 @@ class FootballChartApp {
         // Set the active color button to light green by default
         this.updateActiveColorButton(this.currentColor);
 
-        this.refreshCustomLineupsList();
+        await this.refreshCustomLineupsList();
         this.updateActionModeVisibility(this.currentTool);
         this.updateActionModeUI(this.currentActionMode);
 
         // Initialize auto-load lineup dropdown
-        this.initializeAutoLoadDropdown();
+        await this.initializeAutoLoadDropdown();
 
         // Load auto-lineup if set
-        this.loadAutoLineupIfSet();
+        await this.loadAutoLineupIfSet();
 
         // Initialize change tracking
         this.setupChangeTracking();
@@ -792,7 +859,7 @@ class FootballChartApp {
         }
     }
 
-    saveCurrentPlay() {
+    async saveCurrentPlay() {
         if (!window.canvasManager) return;
 
         const playName = document.getElementById('play-name')?.value || 'Untitled Play';
@@ -808,12 +875,17 @@ class FootballChartApp {
             modified: new Date().toISOString()
         };
 
-        this.storePlay(play);
-        this.markAsSaved(playData);
-        this.showNotification('Play saved successfully!', 'success');
+        try {
+            await this.storePlay(play);
+            this.markAsSaved(playData);
+            this.showNotification('Play saved successfully!', 'success');
+        } catch (error) {
+            console.error('Error saving play:', error);
+            this.showNotification('Error saving play. Please try again.', 'error');
+        }
     }
 
-    saveAsNewPlay() {
+    async saveAsNewPlay() {
         if (!window.canvasManager) return;
 
         const currentName = document.getElementById('play-name')?.value || 'Untitled Play';
@@ -837,9 +909,14 @@ class FootballChartApp {
             modified: new Date().toISOString()
         };
 
-        this.storePlay(play);
-        this.markAsSaved(playData);
-        this.showNotification('Play saved as new copy!', 'success');
+        try {
+            await this.storePlay(play);
+            this.markAsSaved(playData);
+            this.showNotification('Play saved as new copy!', 'success');
+        } catch (error) {
+            console.error('Error saving play copy:', error);
+            this.showNotification('Error saving play copy. Please try again.', 'error');
+        }
     }
 
     markAsSaved(playData) {
@@ -900,30 +977,68 @@ class FootballChartApp {
         }
     }
 
-    storePlay(play) {
-        let storedPlays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
+    async storePlay(play) {
+        try {
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                // Use Firebase
+                await this.firebaseService.savePlay(play);
+            } else {
+                // Fallback to localStorage
+                let storedPlays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
+                
+                // Update existing play or add new one
+                const existingIndex = storedPlays.findIndex(p => p.id === play.id);
+                if (existingIndex >= 0) {
+                    storedPlays[existingIndex] = play;
+                } else {
+                    storedPlays.push(play);
+                }
+                
+                localStorage.setItem('footballPlays', JSON.stringify(storedPlays));
+            }
 
-        // Update existing play or add new one
-        const existingIndex = storedPlays.findIndex(p => p.id === play.id);
-        if (existingIndex >= 0) {
-            storedPlays[existingIndex] = play;
-        } else {
-            storedPlays.push(play);
-        }
-
-        localStorage.setItem('footballPlays', JSON.stringify(storedPlays));
-
-        if (window.libraryManager) {
-            window.libraryManager.loadPlays();
+            if (window.libraryManager) {
+                await window.libraryManager.loadPlays();
+            }
+        } catch (error) {
+            console.error('Error storing play:', error);
+            throw error;
         }
     }
 
-    loadStoredPlays() {
-        const storedPlays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
-        if (window.libraryManager) {
-            window.libraryManager.setPlays(storedPlays);
+    async loadStoredPlays() {
+        try {
+            let plays = [];
+            
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                // Use Firebase
+                plays = await this.firebaseService.getPlays();
+                
+                // Set up real-time listener for plays
+                this.firebaseService.onPlaysChange((updatedPlays) => {
+                    if (window.libraryManager) {
+                        window.libraryManager.setPlays(updatedPlays);
+                    }
+                });
+            } else {
+                // Fallback to localStorage
+                plays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
+            }
+            
+            if (window.libraryManager) {
+                window.libraryManager.setPlays(plays);
+            }
+            
+            return plays;
+        } catch (error) {
+            console.error('Error loading plays:', error);
+            // Fallback to localStorage on error
+            const plays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
+            if (window.libraryManager) {
+                window.libraryManager.setPlays(plays);
+            }
+            return plays;
         }
-        return storedPlays;
     }
 
     filterPlays() {
@@ -1189,3 +1304,9 @@ function toggleToolbar() {
         document.body.appendChild(overlay);
     }
 }
+
+// Export the class for ES6 module usage
+export { FootballChartApp };
+
+// Also add to window for backward compatibility
+window.FootballChartApp = FootballChartApp;
