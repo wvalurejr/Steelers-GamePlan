@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Steelers Settings</title>
+    <script type="module">
+        // Import Firebase SDKs (from Google’s CDN)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+        // 🔹 Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYElCAAxCwsJ2w_baL6bu_6Bq8CzVKY-M",
+            authDomain: "steelers-app.firebaseapp.com",
+            projectId: "steelers-app",
+            storageBucket: "steelers-app.firebasestorage.app",
+            messagingSenderId: "13648088121",
+            appId: "1:13648088121:web:495f8e5df5bf8c7a0f91e8"
+        };
+
+        // Init
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Save settings
+        async function saveSettings() {
+            const settings = { theme: "dark", speed: 3 };
+            await setDoc(doc(db, "settings", "team"), settings);
+            alert("Settings saved!");
+        }
+
+        // Load settings
+        async function loadSettings() {
+            const snap = await getDoc(doc(db, "settings", "team"));
+            if (snap.exists()) {
+                alert("Loaded: " + JSON.stringify(snap.data()));
+            } else {
+                alert("No settings found!");
+            }
+        }
+
+        window.saveSettings = saveSettings;
+        window.loadSettings = loadSettings;
+    </script>
+</head>
+
+<body>
+    <h1>East Houma Steelers Settings</h1>
+    <button onclick="saveSettings()">Save</button>
+    <button onclick="loadSettings()">Load</button>
+</body>
+
+</html>
