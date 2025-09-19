@@ -1,3 +1,6 @@
+// Import Firebase service
+import { FirebaseService } from './firebase-service.js';
+
 // Library Manager for Play Organization and Management
 class LibraryManager {
     constructor() {
@@ -9,9 +12,13 @@ class LibraryManager {
             formation: '',
             tags: ''
         };
+        this.firebaseService = null;
     }
 
     init() {
+        // Get Firebase service instance
+        this.firebaseService = FirebaseService.getInstance();
+        
         this.loadPlays();
         this.setupEventListeners();
         this.renderPlays();
@@ -22,9 +29,21 @@ class LibraryManager {
         // This method can be extended for additional library-specific events
     }
 
-    loadPlays() {
-        const storedPlays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
-        this.setPlays(storedPlays);
+    async loadPlays() {
+        try {
+            let plays = [];
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                plays = await this.firebaseService.getPlays();
+            } else {
+                plays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
+            }
+            this.setPlays(plays);
+        } catch (error) {
+            console.error('Error loading plays in library:', error);
+            // Fallback to localStorage
+            const plays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
+            this.setPlays(plays);
+        }
     }
 
     setPlays(plays) {
@@ -556,3 +575,9 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Export the class for ES6 module usage
+export { LibraryManager };
+
+// Also add to window for backward compatibility
+window.LibraryManager = LibraryManager;
