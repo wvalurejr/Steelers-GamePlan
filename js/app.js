@@ -28,6 +28,7 @@ class FootballChartApp {
         this.setupEventListeners();
         this.setupThemeToggle();
         await this.loadStoredPlays();
+        await this.loadAdminContent(); // Load admin-managed content
         this.setupRouting();
         this.loadInitialPage();
     }
@@ -40,13 +41,17 @@ class FootballChartApp {
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
-                e.preventDefault();
+                // Only prevent default for internal navigation links (those with data-page attribute)
                 const page = link.getAttribute('data-page');
-                this.navigateToPage(page);
-                this.updateNavigation(link);
+                if (page) {
+                    e.preventDefault();
+                    this.navigateToPage(page);
+                    this.updateNavigation(link);
 
-                // Close mobile menu
-                navMenu.classList.remove('active');
+                    // Close mobile menu
+                    navMenu.classList.remove('active');
+                }
+                // If no data-page attribute (like admin link), allow normal navigation
             });
         });
 
@@ -1229,6 +1234,362 @@ class FootballChartApp {
                 document.body.removeChild(notification);
             }, 300);
         }, 3000);
+    }
+
+    // Admin Content Integration Methods
+    async loadAdminContent() {
+        try {
+            await Promise.all([
+                this.loadSeasonData(),
+                this.loadScheduleData(),
+                this.loadPlayerData(),
+                this.loadContentData(),
+                this.loadAppSettings()
+            ]);
+
+            this.updateHomePage();
+        } catch (error) {
+            console.error('Error loading admin content:', error);
+        }
+    }
+
+    async loadSeasonData() {
+        try {
+            let seasonData = {};
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const settings = await this.firebaseService.getSettings();
+                seasonData = settings.seasonData || {};
+            } else {
+                seasonData = JSON.parse(localStorage.getItem('seasonData') || '{}');
+            }
+
+            this.seasonData = {
+                year: seasonData.year || 2025,
+                wins: seasonData.wins || 2,
+                losses: seasonData.losses || 0,
+                standing: seasonData.standing || '1st Place - Bayou Division',
+                motto: seasonData.motto || 'Steel Strong, Houma Proud!',
+                ...seasonData
+            };
+        } catch (error) {
+            console.error('Error loading season data:', error);
+            // Set defaults
+            this.seasonData = {
+                year: 2025,
+                wins: 2,
+                losses: 0,
+                standing: '1st Place - Bayou Division',
+                motto: 'Steel Strong, Houma Proud!'
+            };
+        }
+    }
+
+    async loadScheduleData() {
+        try {
+            let games = [];
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const settings = await this.firebaseService.getSettings();
+                games = settings.games || [];
+            } else {
+                games = JSON.parse(localStorage.getItem('teamGames') || '[]');
+            }
+
+            this.games = games;
+        } catch (error) {
+            console.error('Error loading schedule data:', error);
+            this.games = [];
+        }
+    }
+
+    async loadPlayerData() {
+        try {
+            let players = [];
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const settings = await this.firebaseService.getSettings();
+                players = settings.players || [];
+            } else {
+                players = JSON.parse(localStorage.getItem('teamPlayers') || '[]');
+            }
+
+            this.players = players;
+        } catch (error) {
+            console.error('Error loading player data:', error);
+            this.players = [];
+        }
+    }
+
+    async loadContentData() {
+        try {
+            let contentData = {};
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const settings = await this.firebaseService.getSettings();
+                contentData = settings.contentData || {};
+            } else {
+                contentData = JSON.parse(localStorage.getItem('contentData') || '{}');
+            }
+
+            this.contentData = {
+                heroTitle: contentData.heroTitle || '🏆 Welcome Steelers! 🏆',
+                heroSubtitle: contentData.heroSubtitle || 'The Steelers organization believes that collaboration makes all things better. This GamePlan tool empowers our coaching staff to design, share, and perfect plays together - because great teams are built on great teamwork.',
+                coachGreeting: contentData.coachGreeting || 'Let\'s create championship plays together! 🥇',
+                seasonHighlights: contentData.seasonHighlights || '',
+                featureCards: contentData.featureCards || [
+                    { icon: '📊', title: 'Dynamic Play Charting', description: 'Create and edit plays with our interactive canvas system' },
+                    { icon: '📚', title: 'Play Library', description: 'Organize and manage all your team\'s plays in one place' },
+                    { icon: '👥', title: 'Team Collaboration', description: 'Work together with your coaching staff in real-time' },
+                    { icon: '📱', title: 'Mobile Friendly', description: 'Access your plays anywhere with responsive design' }
+                ]
+            };
+        } catch (error) {
+            console.error('Error loading content data:', error);
+            // Set defaults
+            this.contentData = {
+                heroTitle: '🏆 Welcome Steelers! 🏆',
+                heroSubtitle: 'The Steelers organization believes that collaboration makes all things better.',
+                coachGreeting: 'Let\'s create championship plays together! 🥇',
+                featureCards: [
+                    { icon: '📊', title: 'Dynamic Play Charting', description: 'Create and edit plays with our interactive canvas system' },
+                    { icon: '📚', title: 'Play Library', description: 'Organize and manage all your team\'s plays in one place' }
+                ]
+            };
+        }
+    }
+
+    async loadAppSettings() {
+        try {
+            let settings = {};
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const data = await this.firebaseService.getSettings();
+                settings = data.appSettings || {};
+            } else {
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            }
+
+            this.appSettings = {
+                showPlayerStats: settings.showPlayerStats !== false,
+                showSchedule: settings.showSchedule !== false,
+                publicScores: settings.publicScores !== false,
+                ...settings
+            };
+        } catch (error) {
+            console.error('Error loading app settings:', error);
+            this.appSettings = {
+                showPlayerStats: true,
+                showSchedule: true,
+                publicScores: true
+            };
+        }
+    }
+
+    updateHomePage() {
+        // Update hero section
+        const heroTitle = document.querySelector('.hero-title');
+        const heroSubtitle = document.querySelector('.hero-subtitle');
+        const coachGreeting = document.querySelector('.coach-greeting');
+
+        if (heroTitle) heroTitle.textContent = this.contentData.heroTitle;
+        if (heroSubtitle) heroSubtitle.innerHTML = this.contentData.heroSubtitle;
+        if (coachGreeting) coachGreeting.textContent = this.contentData.coachGreeting;
+
+        // Update season info
+        this.updateSeasonStats();
+
+        // Update schedule if enabled
+        if (this.appSettings.showSchedule) {
+            this.updateScheduleDisplay();
+        }
+
+        // Update feature cards
+        this.updateFeatureCards();
+    }
+
+    updateSeasonStats() {
+        const wins = this.seasonData.wins || 0;
+        const losses = this.seasonData.losses || 0;
+        const totalGames = wins + losses;
+        const percentage = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 100;
+
+        // Update record display
+        const winsCard = document.querySelector('.record-card.wins');
+        const lossesCard = document.querySelector('.record-card.losses');
+        const percentageCard = document.querySelector('.record-card.percentage');
+
+        if (winsCard) {
+            winsCard.innerHTML = `
+                <h3>${wins}</h3>
+                <p>Wins</p>
+            `;
+        }
+
+        if (lossesCard) {
+            lossesCard.innerHTML = `
+                <h3>${losses}</h3>
+                <p>Losses</p>
+            `;
+        }
+
+        if (percentageCard) {
+            percentageCard.innerHTML = `
+                <h3>${percentage}%</h3>
+                <p>Win Rate</p>
+            `;
+        }
+
+        // Update division standing
+        const divisionStanding = document.querySelector('.division-standing');
+        if (divisionStanding) {
+            divisionStanding.textContent = `🥇 ${this.seasonData.standing}`;
+        }
+
+        // Update team motto
+        const mottoText = document.querySelector('.motto-text');
+        if (mottoText) {
+            mottoText.textContent = `"${this.seasonData.motto}" 💪`;
+        }
+
+        // Update season header
+        const seasonHeader = document.querySelector('.team-stats-section h2');
+        if (seasonHeader) {
+            seasonHeader.textContent = `🏈 East Houma Steelers - ${this.seasonData.year} Season 🏈`;
+        }
+    }
+
+    updateScheduleDisplay() {
+        const gamesGrid = document.querySelector('.games-grid');
+        if (!gamesGrid || !this.games || this.games.length === 0) return;
+
+        // Clear current games
+        gamesGrid.innerHTML = '';
+
+        // Show up to 4 recent/upcoming games
+        const displayGames = this.games.slice(0, 4);
+
+        displayGames.forEach(game => {
+            const gameCard = document.createElement('div');
+
+            // Determine game status classes
+            let statusClass = 'upcoming';
+            let resultBadge = 'TBD';
+
+            if (game.status === 'completed') {
+                const steelersScore = game.steelersScore || 0;
+                const opponentScore = game.opponentScore || 0;
+
+                if (steelersScore > opponentScore) {
+                    statusClass = 'win';
+                    resultBadge = 'W';
+                } else {
+                    statusClass = 'loss';
+                    resultBadge = 'L';
+                }
+            } else if (game.status === 'playoff') {
+                statusClass = 'playoff';
+                resultBadge = 'PLAYOFF';
+            }
+
+            gameCard.className = `game-card ${statusClass}`;
+
+            let scoreDisplay = '';
+            if (game.status === 'completed' && (game.showScore !== false || this.appSettings.publicScores)) {
+                scoreDisplay = `
+                    <div class="team home-team">
+                        <span class="team-name">Steelers</span>
+                        <span class="score">${game.steelersScore || 0}</span>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team away-team">
+                        <span class="team-name">${game.opponent}</span>
+                        <span class="score">${game.opponentScore || 0}</span>
+                    </div>
+                `;
+            } else if (game.status === 'upcoming') {
+                scoreDisplay = `
+                    <div class="team home-team">
+                        <span class="team-name">Steelers</span>
+                        <span class="score" data-tbd>-</span>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team away-team">
+                        <span class="team-name">${game.opponent}</span>
+                        <span class="score" data-tbd>-</span>
+                    </div>
+                `;
+            }
+
+            gameCard.innerHTML = `
+                <div class="game-header">
+                    <span class="week">${game.week}</span>
+                    <span class="result-badge ${statusClass}">${resultBadge}</span>
+                </div>
+                <div class="game-matchup">
+                    ${scoreDisplay}
+                </div>
+                ${game.highlights ? `<div class="game-highlight">${game.highlights}</div>` : ''}
+                ${game.status === 'upcoming' && game.time ? `<div class="game-time">Kickoff: ${game.time}</div>` : ''}
+            `;
+
+            gamesGrid.appendChild(gameCard);
+        });
+
+        // Update season stats summary
+        this.updateSeasonStatsDisplay();
+    }
+
+    updateSeasonStatsDisplay() {
+        const seasonStats = document.querySelector('.season-stats');
+        if (!seasonStats) return;
+
+        const totalGames = this.games.length;
+        const completedGames = this.games.filter(g => g.status === 'completed').length;
+        const upcomingGames = this.games.filter(g => g.status === 'upcoming').length;
+        const playoffGames = this.games.filter(g => g.status === 'playoff').length;
+
+        seasonStats.innerHTML = `
+            <h3>Season Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">${totalGames}</div>
+                    <div class="stat-label">Total Games</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${completedGames}</div>
+                    <div class="stat-label">Played</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${upcomingGames}</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+                ${playoffGames > 0 ? `
+                <div class="stat-item">
+                    <div class="stat-value">${playoffGames}</div>
+                    <div class="stat-label">Playoff</div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    updateFeatureCards() {
+        const featuresGrid = document.querySelector('.features-grid');
+        if (!featuresGrid) return;
+
+        featuresGrid.innerHTML = '';
+
+        this.contentData.featureCards.forEach(card => {
+            const featureCard = document.createElement('div');
+            featureCard.className = 'feature-card';
+            featureCard.innerHTML = `
+                <div class="feature-icon">${card.icon}</div>
+                <h3>${card.title}</h3>
+                <p>${card.description}</p>
+            `;
+            featuresGrid.appendChild(featureCard);
+        });
     }
 }
 

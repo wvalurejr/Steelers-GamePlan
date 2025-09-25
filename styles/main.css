@@ -277,6 +277,19 @@ body {
     color: var(--white);
 }
 
+.nav-link.admin-link {
+    background: linear-gradient(45deg, #FF6B35, #E63E00);
+    color: white;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+}
+
+.nav-link.admin-link:hover {
+    background: linear-gradient(45deg, #E63E00, #CC3700);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(230, 62, 0, 0.3);
+}
+
 .theme-toggle {
     background: none;
     border: 2px solid var(--border-color);
@@ -758,6 +771,13 @@ body {
     padding: 15px;
     border-radius: 15px;
     font-weight: 700;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
 .stat-item {
