@@ -8,6 +8,7 @@ class AdminPanel {
         this.currentTab = 'season';
         this.games = [];
         this.players = [];
+        this.teams = [];
         this.contentData = {};
         this.settings = {};
         this.archivedSeasons = [];
@@ -59,6 +60,14 @@ class AdminPanel {
         document.getElementById('player-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.savePlayer();
+        });
+
+        // Teams Management
+        document.getElementById('add-team').addEventListener('click', () => this.showTeamModal());
+        document.getElementById('cancel-team').addEventListener('click', () => this.hideTeamModal());
+        document.getElementById('team-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveTeam();
         });
 
         // Content Management
@@ -173,6 +182,7 @@ class AdminPanel {
                 this.loadSeasonData(),
                 this.loadGames(),
                 this.loadPlayers(),
+                this.loadTeams(),
                 this.loadContentData(),
                 this.loadSettings(),
                 this.loadArchivedSeasons()
@@ -193,6 +203,10 @@ class AdminPanel {
             case 'schedule':
                 await this.loadGames();
                 this.renderGames();
+                break;
+            case 'teams':
+                await this.loadTeams();
+                this.renderTeams();
                 break;
             case 'players':
                 await this.loadPlayers();
@@ -1111,5 +1125,323 @@ class AdminPanel {
                 }
             }, 300);
         }, 4000);
+    }
+
+    // Teams Management Methods
+    async loadTeams() {
+        try {
+            const teams = await this.firebaseService.getTeams();
+            this.teams = teams || [];
+        } catch (error) {
+            console.warn('Failed to load teams from Firebase, using localStorage');
+            this.teams = JSON.parse(localStorage.getItem('adminTeams')) || [];
+        }
+
+        // If no teams exist, populate with some default teams for the league
+        if (this.teams.length === 0) {
+            this.teams = this.getDefaultTeams();
+            // Save the default teams
+            try {
+                await this.firebaseService.saveTeams(this.teams);
+            } catch (error) {
+                console.warn('Failed to save default teams to Firebase');
+            }
+            localStorage.setItem('adminTeams', JSON.stringify(this.teams));
+        }
+
+        this.renderTeams();
+    }
+
+    getDefaultTeams() {
+        return [
+            // East Side Division
+            {
+                id: 'team_east_1',
+                name: 'East Houma Steelers',
+                division: 'East Side',
+                primaryColor: '#000000',
+                secondaryColor: '#FF6B35',
+                location: 'East Houma Recreation Center',
+                coach: 'Coach Staff',
+                notes: 'Our team - defending champions!',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'team_east_2',
+                name: 'Thibodaux Tigers',
+                division: 'East Side',
+                primaryColor: '#FF4500',
+                secondaryColor: '#000000',
+                location: 'Thibodaux Community Center',
+                coach: 'Coach Johnson',
+                notes: 'Strong running game',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'team_east_3',
+                name: 'Bayou Bulldogs',
+                division: 'East Side',
+                primaryColor: '#8B4513',
+                secondaryColor: '#FFFFFF',
+                location: 'Bayou Stadium',
+                coach: 'Coach Williams',
+                notes: 'Tough defense',
+                createdAt: new Date().toISOString()
+            },
+            // West Side Division
+            {
+                id: 'team_west_1',
+                name: 'Morgan City Mariners',
+                division: 'West Side',
+                primaryColor: '#000080',
+                secondaryColor: '#FFFFFF',
+                location: 'Morgan City Sports Complex',
+                coach: 'Coach Davis',
+                notes: 'Fast offense',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'team_west_2',
+                name: 'Raceland Rams',
+                division: 'West Side',
+                primaryColor: '#228B22',
+                secondaryColor: '#FFD700',
+                location: 'Raceland High School',
+                coach: 'Coach Brown',
+                notes: 'Balanced team',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'team_west_3',
+                name: 'Lockport Lions',
+                division: 'West Side',
+                primaryColor: '#8B008B',
+                secondaryColor: '#FFFFFF',
+                location: 'Lockport Middle School',
+                coach: 'Coach Wilson',
+                notes: 'Young but determined',
+                createdAt: new Date().toISOString()
+            }
+        ];
+    }
+
+    renderTeams() {
+        const eastTeamsContainer = document.getElementById('east-teams');
+        const westTeamsContainer = document.getElementById('west-teams');
+
+        // Clear containers
+        eastTeamsContainer.innerHTML = '';
+        westTeamsContainer.innerHTML = '';
+
+        const eastTeams = this.teams.filter(team => team.division === 'East Side');
+        const westTeams = this.teams.filter(team => team.division === 'West Side');
+
+        // Render East Side teams
+        if (eastTeams.length === 0) {
+            eastTeamsContainer.innerHTML = `
+                <div class="empty-division">
+                    <p>No teams in East Side Division yet</p>
+                    <p>Add your first team to get started</p>
+                    <button class="btn btn-primary" onclick="adminPanel.showTeamModal('East Side')">+ Add East Side Team</button>
+                </div>
+            `;
+        } else {
+            eastTeams.forEach(team => {
+                eastTeamsContainer.appendChild(this.createTeamCard(team));
+            });
+        }
+
+        // Render West Side teams
+        if (westTeams.length === 0) {
+            westTeamsContainer.innerHTML = `
+                <div class="empty-division">
+                    <p>No teams in West Side Division yet</p>
+                    <p>Add your first team to get started</p>
+                    <button class="btn btn-primary" onclick="adminPanel.showTeamModal('West Side')">+ Add West Side Team</button>
+                </div>
+            `;
+        } else {
+            westTeams.forEach(team => {
+                westTeamsContainer.appendChild(this.createTeamCard(team));
+            });
+        }
+    }
+
+    createTeamCard(team) {
+        const card = document.createElement('div');
+        card.className = 'team-card';
+        card.style.setProperty('--team-primary', team.primaryColor || '#000000');
+        card.style.setProperty('--team-secondary', team.secondaryColor || '#ffffff');
+
+        card.innerHTML = `
+            <div class="team-header">
+                <h4 class="team-name">${team.name}</h4>
+                <div class="team-colors">
+                    <div class="color-dot" style="background-color: ${team.primaryColor}"></div>
+                    <div class="color-dot" style="background-color: ${team.secondaryColor}"></div>
+                </div>
+            </div>
+            <div class="team-info">
+                <p><strong>Division:</strong> ${team.division} Division</p>
+                ${team.location ? `<p><strong>Home Field:</strong> ${team.location}</p>` : ''}
+                ${team.coach ? `<p><strong>Coach:</strong> ${team.coach}</p>` : ''}
+                ${team.notes ? `<p><strong>Notes:</strong> ${team.notes}</p>` : ''}
+            </div>
+            <div class="team-actions">
+                <button class="btn btn-info btn-sm" onclick="adminPanel.editTeam('${team.id}')">✏️ Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="adminPanel.deleteTeam('${team.id}')">🗑️ Delete</button>
+            </div>
+        `;
+
+        return card;
+    }
+
+    showTeamModal(presetDivision = '') {
+        const modal = document.getElementById('team-modal');
+        const title = document.getElementById('team-modal-title');
+        
+        title.textContent = 'Add New Team';
+        this.clearTeamForm();
+        
+        // Preset division if provided
+        if (presetDivision) {
+            document.getElementById('team-division').value = presetDivision;
+        }
+        
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            document.getElementById('team-name').focus();
+        }, 100);
+    }
+
+    hideTeamModal() {
+        const modal = document.getElementById('team-modal');
+        modal.style.display = 'none';
+        this.clearTeamForm();
+    }
+
+    clearTeamForm() {
+        document.getElementById('team-form').reset();
+        document.getElementById('team-primary-color').value = '#000000';
+        document.getElementById('team-secondary-color').value = '#ffffff';
+        // Remove edit mode data
+        delete document.getElementById('team-form').dataset.editingId;
+    }
+
+    async saveTeam() {
+        const form = document.getElementById('team-form');
+        const editingId = form.dataset.editingId;
+
+        const teamData = {
+            id: editingId || 'team_' + Date.now(),
+            name: document.getElementById('team-name').value,
+            division: document.getElementById('team-division').value,
+            primaryColor: document.getElementById('team-primary-color').value,
+            secondaryColor: document.getElementById('team-secondary-color').value,
+            location: document.getElementById('team-location').value,
+            coach: document.getElementById('team-coach').value,
+            notes: document.getElementById('team-notes').value,
+            createdAt: editingId ? undefined : new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            if (editingId) {
+                // Update existing team
+                const index = this.teams.findIndex(t => t.id === editingId);
+                if (index !== -1) {
+                    this.teams[index] = { ...this.teams[index], ...teamData };
+                }
+            } else {
+                // Add new team
+                this.teams.push(teamData);
+            }
+
+            // Save to Firebase
+            await this.firebaseService.saveTeams(this.teams);
+            
+            // Save to localStorage as backup
+            localStorage.setItem('adminTeams', JSON.stringify(this.teams));
+
+            this.renderTeams();
+            this.hideTeamModal();
+            this.showNotification(editingId ? 'Team updated successfully!' : 'Team added successfully!');
+            
+            // Update schedule opponent options
+            this.updateOpponentOptions();
+            
+        } catch (error) {
+            console.error('Failed to save team:', error);
+            this.showNotification('Failed to save team. Please try again.', 'error');
+        }
+    }
+
+    editTeam(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+
+        // Populate form with team data
+        document.getElementById('team-name').value = team.name || '';
+        document.getElementById('team-division').value = team.division || '';
+        document.getElementById('team-primary-color').value = team.primaryColor || '#000000';
+        document.getElementById('team-secondary-color').value = team.secondaryColor || '#ffffff';
+        document.getElementById('team-location').value = team.location || '';
+        document.getElementById('team-coach').value = team.coach || '';
+        document.getElementById('team-notes').value = team.notes || '';
+
+        // Set editing mode
+        const form = document.getElementById('team-form');
+        form.dataset.editingId = teamId;
+
+        // Update modal title and show
+        document.getElementById('team-modal-title').textContent = 'Edit Team';
+        document.getElementById('team-modal').style.display = 'flex';
+    }
+
+    async deleteTeam(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+
+        if (confirm(`Are you sure you want to delete ${team.name}? This action cannot be undone.`)) {
+            try {
+                // Remove from teams array
+                this.teams = this.teams.filter(t => t.id !== teamId);
+
+                // Save to Firebase
+                await this.firebaseService.saveTeams(this.teams);
+                
+                // Save to localStorage as backup
+                localStorage.setItem('adminTeams', JSON.stringify(this.teams));
+
+                this.renderTeams();
+                this.showNotification('Team deleted successfully!');
+                
+                // Update schedule opponent options
+                this.updateOpponentOptions();
+                
+            } catch (error) {
+                console.error('Failed to delete team:', error);
+                this.showNotification('Failed to delete team. Please try again.', 'error');
+            }
+        }
+    }
+
+    updateOpponentOptions() {
+        // Update the opponent dropdown in the schedule form
+        const opponentSelect = document.getElementById('game-opponent');
+        if (opponentSelect && opponentSelect.tagName === 'SELECT') {
+            // Convert to select if it's still an input
+            const currentValue = opponentSelect.value;
+            opponentSelect.innerHTML = '<option value="">Select Opponent</option>';
+            
+            this.teams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.name;
+                option.textContent = `${team.name} (${team.division})`;
+                opponentSelect.appendChild(option);
+            });
+            
+            opponentSelect.value = currentValue;
+        }
     }
 }

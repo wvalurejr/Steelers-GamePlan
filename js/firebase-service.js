@@ -257,6 +257,161 @@ class FirebaseService {
         }
     }
 
+    // Admin Data Methods
+    async getTeams() {
+        try {
+            const doc = await this.db.collection('admin').doc('teams').get();
+            return doc.exists ? doc.data().teams || [] : [];
+        } catch (error) {
+            console.error('Error getting teams:', error);
+            throw error;
+        }
+    }
+
+    async saveTeams(teams) {
+        try {
+            await this.db.collection('admin').doc('teams').set({
+                teams: teams,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error('Error saving teams:', error);
+            throw error;
+        }
+    }
+
+    async getSchedule() {
+        try {
+            const doc = await this.db.collection('admin').doc('schedule').get();
+            return doc.exists ? doc.data().games || [] : [];
+        } catch (error) {
+            console.error('Error getting schedule:', error);
+            throw error;
+        }
+    }
+
+    async saveSchedule(games) {
+        try {
+            await this.db.collection('admin').doc('schedule').set({
+                games: games,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error('Error saving schedule:', error);
+            throw error;
+        }
+    }
+
+    async getPlayers() {
+        try {
+            const doc = await this.db.collection('admin').doc('players').get();
+            return doc.exists ? doc.data().players || [] : [];
+        } catch (error) {
+            console.error('Error getting players:', error);
+            throw error;
+        }
+    }
+
+    async savePlayers(players) {
+        try {
+            await this.db.collection('admin').doc('players').set({
+                players: players,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error('Error saving players:', error);
+            throw error;
+        }
+    }
+
+    async getSeasonData() {
+        try {
+            const doc = await this.db.collection('admin').doc('season').get();
+            return doc.exists ? doc.data() : {};
+        } catch (error) {
+            console.error('Error getting season data:', error);
+            throw error;
+        }
+    }
+
+    async saveSeasonData(seasonData) {
+        try {
+            await this.db.collection('admin').doc('season').set({
+                ...seasonData,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error('Error saving season data:', error);
+            throw error;
+        }
+    }
+
+    async getContentData() {
+        try {
+            const doc = await this.db.collection('admin').doc('content').get();
+            return doc.exists ? doc.data() : {};
+        } catch (error) {
+            console.error('Error getting content data:', error);
+            throw error;
+        }
+    }
+
+    async saveContentData(contentData) {
+        try {
+            await this.db.collection('admin').doc('content').set({
+                ...contentData,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error('Error saving content data:', error);
+            throw error;
+        }
+    }
+
+    async getSettings() {
+        try {
+            const doc = await this.db.collection('admin').doc('settings').get();
+            return doc.exists ? doc.data() : {};
+        } catch (error) {
+            console.error('Error getting settings:', error);
+            throw error;
+        }
+    }
+
+    async saveSettings(settings) {
+        try {
+            await this.db.collection('admin').doc('settings').set({
+                ...settings,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            throw error;
+        }
+    }
+
+    async getArchivedSeasons() {
+        try {
+            const doc = await this.db.collection('admin').doc('archives').get();
+            return doc.exists ? doc.data().seasons || [] : [];
+        } catch (error) {
+            console.error('Error getting archived seasons:', error);
+            throw error;
+        }
+    }
+
+    async saveArchivedSeasons(seasons) {
+        try {
+            await this.db.collection('admin').doc('archives').set({
+                seasons: seasons,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error('Error saving archived seasons:', error);
+            throw error;
+        }
+    }
+
     // Utility Methods
     cleanup() {
         // Unsubscribe from all listeners
