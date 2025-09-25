@@ -173,6 +173,67 @@
                                         <input type="number" id="opponent-score" min="0" />
                                     </div>
                                 </div>
+
+                                <!-- Game Statistics Section -->
+                                <div class="stats-section" style="display: none;">
+                                    <h4>📊 Game Statistics</h4>
+                                    <div class="form-group">
+                                        <label>
+                                            <input type="checkbox" id="stats-complete" />
+                                            Statistics are complete (uncheck if still gathering stats)
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="stats-grid">
+                                        <div class="stat-category">
+                                            <h5>Offensive Stats</h5>
+                                            <div class="form-row">
+                                                <div class="form-group">
+                                                    <label>Total Yards</label>
+                                                    <input type="number" id="total-yards" min="0" placeholder="0" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Passing Yards</label>
+                                                    <input type="number" id="passing-yards" min="0" placeholder="0" />
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group">
+                                                    <label>Rushing Yards</label>
+                                                    <input type="number" id="rushing-yards" min="0" placeholder="0" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Touchdowns</label>
+                                                    <input type="number" id="touchdowns" min="0" placeholder="0" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="stat-category">
+                                            <h5>Defensive Stats</h5>
+                                            <div class="form-row">
+                                                <div class="form-group">
+                                                    <label>Tackles</label>
+                                                    <input type="number" id="tackles" min="0" placeholder="0" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Interceptions</label>
+                                                    <input type="number" id="interceptions" min="0" placeholder="0" />
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group">
+                                                    <label>Fumble Recoveries</label>
+                                                    <input type="number" id="fumble-recoveries" min="0" placeholder="0" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Sacks</label>
+                                                    <input type="number" id="sacks" min="0" placeholder="0" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="form-group">
                                     <label>Game Highlights/Notes</label>
                                     <textarea id="game-highlights" rows="3"

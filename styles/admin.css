@@ -253,6 +253,84 @@
     margin-top: 1rem;
 }
 
+/* Game Statistics Section */
+.stats-section {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.stats-section h4 {
+    color: var(--admin-primary);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.stat-category {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+.stat-category h5 {
+    color: var(--admin-primary);
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.stats-incomplete {
+    background: #FFF8E1;
+    border: 1px solid var(--admin-warning);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+[data-theme="dark"] .stats-incomplete {
+    background: #3E2723;
+    border-color: var(--admin-warning);
+}
+
+.stats-incomplete-icon {
+    color: var(--admin-warning);
+    font-size: 1.2rem;
+}
+
+.stats-incomplete-text {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Stats Status Indicators */
+.stats-complete {
+    color: var(--admin-success);
+    font-weight: 500;
+}
+
+.stats-incomplete {
+    color: var(--admin-warning);
+    font-weight: 500;
+}
+
 /* Players Grid */
 .players-controls {
     display: flex;

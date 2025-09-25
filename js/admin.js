@@ -189,6 +189,10 @@ class AdminPanel {
             ]);
 
             this.updateUI();
+            
+            // Calculate and update season stats
+            this.updateSeasonStats();
+            this.updateHomePageStats();
         } catch (error) {
             console.error('Error loading admin data:', error);
             this.showNotification('Error loading admin data', 'error');
@@ -308,6 +312,14 @@ class AdminPanel {
                     <p><strong>Date:</strong> ${new Date(game.date).toLocaleDateString()}</p>
                     <p><strong>Location:</strong> ${game.location} ${game.time ? `• Time: ${game.time}` : ''}</p>
                     <p><strong>Status:</strong> <span class="status-badge ${game.status}">${game.status}</span></p>
+                    ${game.statistics && game.status === 'completed' ? 
+                        `<p><strong>Stats:</strong> 
+                            ${game.statistics.complete ? 
+                                '<span class="stats-complete">✅ Complete</span>' : 
+                                '<span class="stats-incomplete">⏳ Incomplete</span>'
+                            }
+                        </p>` : ''
+                    }
                     ${game.highlights ? `<p><strong>Notes:</strong> ${game.highlights}</p>` : ''}
                 </div>
                 <div class="game-score">
@@ -347,9 +359,23 @@ class AdminPanel {
             document.getElementById('game-highlights').value = game.highlights || '';
             document.getElementById('show-score').checked = game.showScore !== false;
 
+            // Populate statistics if they exist
+            if (game.statistics) {
+                document.getElementById('stats-complete').checked = game.statistics.complete || false;
+                document.getElementById('total-yards').value = game.statistics.offense.totalYards || '';
+                document.getElementById('passing-yards').value = game.statistics.offense.passingYards || '';
+                document.getElementById('rushing-yards').value = game.statistics.offense.rushingYards || '';
+                document.getElementById('touchdowns').value = game.statistics.offense.touchdowns || '';
+                document.getElementById('tackles').value = game.statistics.defense.tackles || '';
+                document.getElementById('interceptions').value = game.statistics.defense.interceptions || '';
+                document.getElementById('fumble-recoveries').value = game.statistics.defense.fumbleRecoveries || '';
+                document.getElementById('sacks').value = game.statistics.defense.sacks || '';
+            }
+
             // Show score section if completed
             if (game.status === 'completed') {
                 document.querySelector('.score-section').style.display = 'block';
+                document.querySelector('.stats-section').style.display = 'block';
             }
 
             form.dataset.editIndex = gameIndex;
@@ -381,18 +407,139 @@ class AdminPanel {
             await this.saveGames();
             this.renderGames();
             this.showNotification('Game deleted successfully!', 'success');
+            
+            // Update season stats after deleting a game
+            this.updateSeasonStats();
+            this.updateHomePageStats();
         }
+    }
+
+    // Season Statistics Calculation Methods
+    updateSeasonStats() {
+        const completedGames = this.games.filter(game => game.status === 'completed' && game.steelersScore !== undefined && game.opponentScore !== undefined);
+        
+        let wins = 0;
+        let losses = 0;
+        let totalOffenseStats = {
+            totalYards: 0,
+            passingYards: 0,
+            rushingYards: 0,
+            touchdowns: 0
+        };
+        let totalDefenseStats = {
+            tackles: 0,
+            interceptions: 0,
+            fumbleRecoveries: 0,
+            sacks: 0
+        };
+        let gamesWithStats = 0;
+
+        completedGames.forEach(game => {
+            // Calculate wins/losses
+            if (game.steelersScore > game.opponentScore) {
+                wins++;
+            } else if (game.steelersScore < game.opponentScore) {
+                losses++;
+            }
+
+            // Aggregate statistics
+            if (game.statistics && game.statistics.complete) {
+                gamesWithStats++;
+                totalOffenseStats.totalYards += game.statistics.offense.totalYards || 0;
+                totalOffenseStats.passingYards += game.statistics.offense.passingYards || 0;
+                totalOffenseStats.rushingYards += game.statistics.offense.rushingYards || 0;
+                totalOffenseStats.touchdowns += game.statistics.offense.touchdowns || 0;
+
+                totalDefenseStats.tackles += game.statistics.defense.tackles || 0;
+                totalDefenseStats.interceptions += game.statistics.defense.interceptions || 0;
+                totalDefenseStats.fumbleRecoveries += game.statistics.defense.fumbleRecoveries || 0;
+                totalDefenseStats.sacks += game.statistics.defense.sacks || 0;
+            }
+        });
+
+        // Update season info form
+        document.getElementById('season-wins').value = wins;
+        document.getElementById('season-losses').value = losses;
+
+        // Store aggregated stats for home page
+        this.seasonStats = {
+            wins,
+            losses,
+            winPercentage: completedGames.length > 0 ? Math.round((wins / completedGames.length) * 100) : 0,
+            totalGames: completedGames.length,
+            gamesWithStats,
+            offense: totalOffenseStats,
+            defense: totalDefenseStats
+        };
+
+        // Save to localStorage and Firebase
+        localStorage.setItem('seasonStats', JSON.stringify(this.seasonStats));
+        this.firebaseService.saveSeasonData({ ...this.seasonStats, updatedAt: new Date().toISOString() }).catch(console.error);
+    }
+
+    updateHomePageStats() {
+        // This will be called by the main app to update the home page display
+        // Store stats in a format the main app can use
+        const homePageData = {
+            currentSeason: {
+                year: this.currentSeason,
+                wins: this.seasonStats.wins,
+                losses: this.seasonStats.losses,
+                winPercentage: this.seasonStats.winPercentage
+            },
+            recentGames: this.games
+                .filter(game => game.status === 'completed')
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 5)
+                .map(game => ({
+                    id: game.id,
+                    week: game.week,
+                    opponent: game.opponent,
+                    location: game.location,
+                    steelersScore: game.steelersScore,
+                    opponentScore: game.opponentScore,
+                    result: game.steelersScore > game.opponentScore ? 'W' : 'L',
+                    showScore: game.showScore,
+                    highlights: game.highlights,
+                    date: game.date,
+                    statsComplete: game.statistics ? game.statistics.complete : false
+                })),
+            upcomingGames: this.games
+                .filter(game => game.status === 'upcoming')
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .slice(0, 3)
+                .map(game => ({
+                    id: game.id,
+                    week: game.week,
+                    opponent: game.opponent,
+                    location: game.location,
+                    date: game.date,
+                    time: game.time
+                }))
+        };
+
+        localStorage.setItem('homePageData', JSON.stringify(homePageData));
+        this.firebaseService.saveContentData({ homePageData, updatedAt: new Date().toISOString() }).catch(console.error);
     }
 
     toggleScoreSection(status) {
         const scoreSection = document.querySelector('.score-section');
-        scoreSection.style.display = status === 'completed' ? 'block' : 'none';
+        const statsSection = document.querySelector('.stats-section');
+        
+        if (status === 'completed') {
+            scoreSection.style.display = 'block';
+            statsSection.style.display = 'block';
+        } else {
+            scoreSection.style.display = 'none';
+            statsSection.style.display = 'none';
+        }
     }
 
     async saveGame() {
         try {
             const form = document.getElementById('game-form');
             const gameData = {
+                id: form.dataset.editId || 'game_' + Date.now(),
                 week: document.getElementById('game-week').value,
                 date: document.getElementById('game-date').value,
                 opponent: document.getElementById('game-opponent').value,
@@ -400,13 +547,32 @@ class AdminPanel {
                 time: document.getElementById('game-time').value,
                 status: document.getElementById('game-status').value,
                 highlights: document.getElementById('game-highlights').value,
-                showScore: document.getElementById('show-score').checked
+                showScore: document.getElementById('show-score').checked,
+                createdAt: form.dataset.editId ? undefined : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
 
-            // Add scores if completed
+            // Add scores and statistics if completed
             if (gameData.status === 'completed') {
                 gameData.steelersScore = parseInt(document.getElementById('steelers-score').value) || 0;
                 gameData.opponentScore = parseInt(document.getElementById('opponent-score').value) || 0;
+                
+                // Add statistics
+                gameData.statistics = {
+                    complete: document.getElementById('stats-complete').checked,
+                    offense: {
+                        totalYards: parseInt(document.getElementById('total-yards').value) || 0,
+                        passingYards: parseInt(document.getElementById('passing-yards').value) || 0,
+                        rushingYards: parseInt(document.getElementById('rushing-yards').value) || 0,
+                        touchdowns: parseInt(document.getElementById('touchdowns').value) || 0
+                    },
+                    defense: {
+                        tackles: parseInt(document.getElementById('tackles').value) || 0,
+                        interceptions: parseInt(document.getElementById('interceptions').value) || 0,
+                        fumbleRecoveries: parseInt(document.getElementById('fumble-recoveries').value) || 0,
+                        sacks: parseInt(document.getElementById('sacks').value) || 0
+                    }
+                };
             }
 
             const editIndex = form.dataset.editIndex;
@@ -420,6 +586,10 @@ class AdminPanel {
             await this.saveGames();
             this.renderGames();
             this.hideGameModal();
+            
+            // Update season stats and home page
+            this.updateSeasonStats();
+            this.updateHomePageStats();
             this.showNotification('Game saved successfully!', 'success');
         } catch (error) {
             console.error('Error saving game:', error);
@@ -1299,15 +1469,15 @@ class AdminPanel {
     showTeamModal(presetDivision = '') {
         const modal = document.getElementById('team-modal');
         const title = document.getElementById('team-modal-title');
-        
+
         title.textContent = 'Add New Team';
         this.clearTeamForm();
-        
+
         // Preset division if provided
         if (presetDivision) {
             document.getElementById('team-division').value = presetDivision;
         }
-        
+
         modal.style.display = 'flex';
         setTimeout(() => {
             document.getElementById('team-name').focus();
@@ -1359,17 +1529,17 @@ class AdminPanel {
 
             // Save to Firebase
             await this.firebaseService.saveTeams(this.teams);
-            
+
             // Save to localStorage as backup
             localStorage.setItem('adminTeams', JSON.stringify(this.teams));
 
             this.renderTeams();
             this.hideTeamModal();
             this.showNotification(editingId ? 'Team updated successfully!' : 'Team added successfully!');
-            
+
             // Update schedule opponent options
             this.updateOpponentOptions();
-            
+
         } catch (error) {
             console.error('Failed to save team:', error);
             this.showNotification('Failed to save team. Please try again.', 'error');
@@ -1409,16 +1579,16 @@ class AdminPanel {
 
                 // Save to Firebase
                 await this.firebaseService.saveTeams(this.teams);
-                
+
                 // Save to localStorage as backup
                 localStorage.setItem('adminTeams', JSON.stringify(this.teams));
 
                 this.renderTeams();
                 this.showNotification('Team deleted successfully!');
-                
+
                 // Update schedule opponent options
                 this.updateOpponentOptions();
-                
+
             } catch (error) {
                 console.error('Failed to delete team:', error);
                 this.showNotification('Failed to delete team. Please try again.', 'error');
@@ -1433,14 +1603,14 @@ class AdminPanel {
             // Convert to select if it's still an input
             const currentValue = opponentSelect.value;
             opponentSelect.innerHTML = '<option value="">Select Opponent</option>';
-            
+
             this.teams.forEach(team => {
                 const option = document.createElement('option');
                 option.value = team.name;
                 option.textContent = `${team.name} (${team.division})`;
                 opponentSelect.appendChild(option);
             });
-            
+
             opponentSelect.value = currentValue;
         }
     }
