@@ -4,13 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steelers GamePlan - Collaboration Mak <div class="colors-row">
-            <button class="route-color-btn" data-color="#E63E00" title="Dark Orange"
-                style="background-color: #E63E00;"></button>
-            <button class="route-color-btn" data-color="#000000" title="Black"
-                style="background-color: #000000;"></button>
-            <button class="route-color-btn" data-color="#FFFFFF" title="White"
-                style="background-color: #FFFFFF; border: 1px solid #ccc;"></button>pions</title>
+    <title>Steelers GamePlan - Collaboration Makes Champions</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -496,43 +490,38 @@
     <!-- Firebase CDN -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
-    <!-- App Scripts as ES6 Modules -->
-    <script type="module" src="js/firebase-service.js"></script>
+
+    <!-- App Scripts -->
+    <script src="js/firebase-service.js"></script>
     <script src="js/lineups.js"></script>
-    <script type="module" src="js/app.js"></script>
-    <script type="module" src="js/canvas.js"></script>
-    <script type="module" src="js/library.js"></script>
-    
+    <script src="js/app.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/library.js"></script>
+
     <!-- Initialize App -->
-    <script type="module">
-        import { FirebaseService } from './js/firebase-service.js';
-        import { FootballChartApp } from './js/app.js';
-        import { CanvasManager } from './js/canvas.js';
-        import { LibraryManager } from './js/library.js';
-        
-        // Wait for DOM to be ready
+    <script>
+        // Initialize app when DOM is ready
         document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                // Initialize Firebase first
-                const firebaseService = FirebaseService.getInstance();
-                await firebaseService.initialize();
-                console.log('Firebase initialized successfully');
-                
-                // Start the app
-                window.footballApp = new FootballChartApp();
-                window.libraryManager = new LibraryManager();
-                window.libraryManager.init();
-                
-                console.log('App initialized successfully');
-            } catch (error) {
-                console.warn('Firebase initialization failed, continuing with localStorage fallback:', error);
-                
-                // Start the app without Firebase
-                window.footballApp = new FootballChartApp();
-                window.libraryManager = new LibraryManager();
-                window.libraryManager.init();
+            // Only try Firebase if we're on a proper web server (not file://)
+            if (location.protocol !== 'file:' && typeof firebase !== 'undefined') {
+                try {
+                    // Initialize Firebase first
+                    const firebaseService = FirebaseService.getInstance();
+                    await firebaseService.initialize();
+                    console.log('Firebase initialized successfully');
+                } catch (error) {
+                    console.warn('Firebase initialization failed, continuing with localStorage fallback:', error);
+                }
+            } else {
+                console.log('Running locally or Firebase not available - using localStorage only');
             }
+
+            // Start the app
+            window.footballApp = new FootballChartApp();
+            window.libraryManager = new LibraryManager();
+            window.libraryManager.init();
+
+            console.log('App initialized successfully');
         });
     </script>
 </body>

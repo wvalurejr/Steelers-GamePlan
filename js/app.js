@@ -1,6 +1,3 @@
-// Import Firebase service
-import { FirebaseService } from './firebase-service.js';
-
 // Main Application Controller
 class FootballChartApp {
     constructor() {
@@ -695,7 +692,7 @@ class FootballChartApp {
             } else {
                 localStorage.setItem('autoLoadLineup', lineupName);
             }
-            
+
             if (lineupName) {
                 this.showNotification(`Auto-load set to: ${lineupName.replace('-', ' ').toUpperCase()}`, 'success');
             } else {
@@ -770,7 +767,7 @@ class FootballChartApp {
                 } else {
                     customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
                 }
-                
+
                 if (customLineups.length > 0) {
                     // Add separator
                     const separator = document.createElement('option');
@@ -985,7 +982,7 @@ class FootballChartApp {
             } else {
                 // Fallback to localStorage
                 let storedPlays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
-                
+
                 // Update existing play or add new one
                 const existingIndex = storedPlays.findIndex(p => p.id === play.id);
                 if (existingIndex >= 0) {
@@ -993,7 +990,7 @@ class FootballChartApp {
                 } else {
                     storedPlays.push(play);
                 }
-                
+
                 localStorage.setItem('footballPlays', JSON.stringify(storedPlays));
             }
 
@@ -1009,11 +1006,11 @@ class FootballChartApp {
     async loadStoredPlays() {
         try {
             let plays = [];
-            
+
             if (this.firebaseService && this.firebaseService.isInitialized()) {
                 // Use Firebase
                 plays = await this.firebaseService.getPlays();
-                
+
                 // Set up real-time listener for plays
                 this.firebaseService.onPlaysChange((updatedPlays) => {
                     if (window.libraryManager) {
@@ -1024,11 +1021,11 @@ class FootballChartApp {
                 // Fallback to localStorage
                 plays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
             }
-            
+
             if (window.libraryManager) {
                 window.libraryManager.setPlays(plays);
             }
-            
+
             return plays;
         } catch (error) {
             console.error('Error loading plays:', error);
@@ -1261,17 +1258,8 @@ function throttle(func, limit) {
     };
 }
 
-// Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.footballApp = new FootballChartApp();
-
-    // Initialize library manager
-    window.libraryManager = new LibraryManager();
-    window.libraryManager.init();
-});
-
-// Service Worker registration for PWA capabilities (if needed)
-if ('serviceWorker' in navigator) {
+// Service Worker registration for PWA capabilities (only for HTTPS/HTTP)
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
@@ -1304,9 +1292,3 @@ function toggleToolbar() {
         document.body.appendChild(overlay);
     }
 }
-
-// Export the class for ES6 module usage
-export { FootballChartApp };
-
-// Also add to window for backward compatibility
-window.FootballChartApp = FootballChartApp;

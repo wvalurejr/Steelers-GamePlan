@@ -1,336 +1,274 @@
 // Firebase Service Module for Steelers GamePlan
 // Handles all Firebase operations for persistent, collaborative features
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
-    getDoc, 
-    collection, 
-    addDoc, 
-    updateDoc, 
-    deleteDoc,
-    onSnapshot,
-    query,
-    orderBy,
-    limit,
-    getDocs,
-    serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
 class FirebaseService {
     constructor() {
+        if (FirebaseService.instance) {
+            return FirebaseService.instance;
+        }
+
         this.app = null;
         this.db = null;
-        this.isInitialized = false;
-        this.listeners = new Map(); // Store active listeners for cleanup
+        this.initialized = false;
+        this.listeners = new Map();
+
+        FirebaseService.instance = this;
+        return this;
     }
 
-    // Initialize Firebase
+    static getInstance() {
+        if (!FirebaseService.instance) {
+            FirebaseService.instance = new FirebaseService();
+        }
+        return FirebaseService.instance;
+    }
+
     async initialize() {
         try {
+            // Check if we're on a proper web server
+            if (location.protocol === 'file:') {
+                throw new Error('Firebase not supported on file:// protocol - use a web server');
+            }
+
+            // Check if Firebase is available
+            if (typeof firebase === 'undefined') {
+                throw new Error('Firebase SDK not loaded');
+            }
+
+            // Firebase configuration
             const firebaseConfig = {
-                apiKey: "AIzaSyBYElCAAxCwsJ2w_baL6bu_6Bq8CzVKY-M",
-                authDomain: "steelers-app.firebaseapp.com",
-                projectId: "steelers-app",
-                storageBucket: "steelers-app.firebasestorage.app",
-                messagingSenderId: "13648088121",
-                appId: "1:13648088121:web:495f8e5df5bf8c7a0f91e8"
+                apiKey: "AIzaSyC7xQqQrJqX9g_YLOoqYxs-VdJzHXsVxWg",
+                authDomain: "steelers-gameplan.firebaseapp.com",
+                projectId: "steelers-gameplan",
+                storageBucket: "steelers-gameplan.firebasestorage.app",
+                messagingSenderId: "123456789012",
+                appId: "1:123456789012:web:abc123def456ghi789jkl"
             };
 
-            this.app = initializeApp(firebaseConfig);
-            this.db = getFirestore(this.app);
-            this.isInitialized = true;
-            
+            // Initialize Firebase
+            this.app = firebase.initializeApp(firebaseConfig);
+            this.db = firebase.firestore();
+
+            // Enable offline persistence with better error handling
+            try {
+                await this.db.enablePersistence();
+                console.log('Firebase offline persistence enabled');
+            } catch (err) {
+                if (err.code === 'failed-precondition') {
+                    console.warn('Firebase persistence failed: Multiple tabs open');
+                } else if (err.code === 'unimplemented') {
+                    console.warn('Firebase persistence not supported in this browser');
+                } else {
+                    console.warn('Firebase persistence failed:', err);
+                }
+            }
+
+            this.initialized = true;
             console.log('Firebase initialized successfully');
             return true;
+
         } catch (error) {
             console.error('Firebase initialization failed:', error);
-            return false;
+            this.initialized = false;
+            throw error;
         }
     }
 
-    // Check if Firebase is ready
-    ensureInitialized() {
-        if (!this.isInitialized) {
-            throw new Error('Firebase not initialized. Call initialize() first.');
-        }
+    isInitialized() {
+        return this.initialized;
     }
 
-    // =================== PLAYS MANAGEMENT ===================
-    
-    // Save a play to Firebase
-    async savePlay(playData) {
-        this.ensureInitialized();
+    // Plays Management
+    async savePlay(play) {
+        if (!this.initialized) throw new Error('Firebase not initialized');
+
         try {
-            const playId = playData.id || `play_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const playDoc = {
-                id: playId,
-                name: playData.name || 'Untitled Play',
-                elements: playData.elements || [],
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                createdBy: playData.createdBy || 'Anonymous',
-                category: playData.category || 'general',
-                description: playData.description || ''
-            };
+            const playRef = this.db.collection('plays').doc(play.id);
+            await playRef.set({
+                ...play,
+                lastModified: firebase.firestore.FieldValue.serverTimestamp()
+            });
 
-            await setDoc(doc(this.db, 'plays', playId), playDoc);
-            console.log('Play saved successfully:', playId);
-            return playId;
+            // Log activity
+            await this.logActivity('play_saved', `Play "${play.name}" saved`, { playId: play.id });
+
+            return true;
         } catch (error) {
             console.error('Error saving play:', error);
             throw error;
         }
     }
 
-    // Load a specific play
-    async loadPlay(playId) {
-        this.ensureInitialized();
+    async getPlays() {
+        if (!this.initialized) throw new Error('Firebase not initialized');
+
         try {
-            const playDoc = await getDoc(doc(this.db, 'plays', playId));
-            if (playDoc.exists()) {
-                return { id: playDoc.id, ...playDoc.data() };
-            } else {
-                console.warn('Play not found:', playId);
-                return null;
-            }
+            const snapshot = await this.db.collection('plays')
+                .orderBy('created', 'desc')
+                .get();
+
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) {
-            console.error('Error loading play:', error);
+            console.error('Error getting plays:', error);
             throw error;
         }
     }
 
-    // Load all plays
-    async loadAllPlays() {
-        this.ensureInitialized();
-        try {
-            const playsQuery = query(
-                collection(this.db, 'plays'),
-                orderBy('updatedAt', 'desc')
-            );
-            const querySnapshot = await getDocs(playsQuery);
-            const plays = [];
-            
-            querySnapshot.forEach((doc) => {
-                plays.push({ id: doc.id, ...doc.data() });
-            });
-            
-            return plays;
-        } catch (error) {
-            console.error('Error loading plays:', error);
-            throw error;
-        }
-    }
-
-    // Delete a play
     async deletePlay(playId) {
-        this.ensureInitialized();
+        if (!this.initialized) throw new Error('Firebase not initialized');
+
         try {
-            await deleteDoc(doc(this.db, 'plays', playId));
-            console.log('Play deleted successfully:', playId);
+            await this.db.collection('plays').doc(playId).delete();
+            await this.logActivity('play_deleted', `Play deleted`, { playId });
+            return true;
         } catch (error) {
             console.error('Error deleting play:', error);
             throw error;
         }
     }
 
-    // Listen to plays changes in real-time
-    onPlaysChanged(callback) {
-        this.ensureInitialized();
-        try {
-            const playsQuery = query(
-                collection(this.db, 'plays'),
-                orderBy('updatedAt', 'desc')
-            );
-            
-            const unsubscribe = onSnapshot(playsQuery, (snapshot) => {
-                const plays = [];
-                snapshot.forEach((doc) => {
-                    plays.push({ id: doc.id, ...doc.data() });
-                });
-                callback(plays);
-            });
+    // Real-time listeners
+    onPlaysChange(callback) {
+        if (!this.initialized) return null;
 
-            // Store listener for cleanup
+        try {
+            const unsubscribe = this.db.collection('plays')
+                .orderBy('created', 'desc')
+                .onSnapshot(snapshot => {
+                    const plays = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    callback(plays);
+                });
+
             this.listeners.set('plays', unsubscribe);
             return unsubscribe;
         } catch (error) {
             console.error('Error setting up plays listener:', error);
-            throw error;
+            return null;
         }
     }
 
-    // =================== CUSTOM LINEUPS MANAGEMENT ===================
-    
-    // Save custom lineup
-    async saveCustomLineup(lineupData) {
-        this.ensureInitialized();
-        try {
-            const lineupId = lineupData.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-            const lineupDoc = {
-                id: lineupId,
-                name: lineupData.name,
-                positions: lineupData.positions || [],
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                createdBy: lineupData.createdBy || 'Anonymous',
-                isPublic: lineupData.isPublic !== false // Default to public
-            };
+    // Custom Lineups Management
+    async saveCustomLineup(lineup) {
+        if (!this.initialized) throw new Error('Firebase not initialized');
 
-            await setDoc(doc(this.db, 'lineups', lineupId), lineupDoc);
-            console.log('Custom lineup saved successfully:', lineupId);
-            return lineupId;
+        try {
+            const lineupRef = this.db.collection('customLineups').doc(lineup.name);
+            await lineupRef.set({
+                ...lineup,
+                lastModified: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            await this.logActivity('lineup_saved', `Custom lineup "${lineup.name}" saved`, { lineupName: lineup.name });
+            return true;
         } catch (error) {
             console.error('Error saving custom lineup:', error);
             throw error;
         }
     }
 
-    // Load custom lineups
-    async loadCustomLineups() {
-        this.ensureInitialized();
+    async getCustomLineups() {
+        if (!this.initialized) throw new Error('Firebase not initialized');
+
         try {
-            const lineupsQuery = query(
-                collection(this.db, 'lineups'),
-                orderBy('updatedAt', 'desc')
-            );
-            const querySnapshot = await getDocs(lineupsQuery);
-            const lineups = {};
-            
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                lineups[data.name] = data;
-            });
-            
-            return lineups;
+            const snapshot = await this.db.collection('customLineups')
+                .orderBy('created', 'desc')
+                .get();
+
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) {
-            console.error('Error loading custom lineups:', error);
+            console.error('Error getting custom lineups:', error);
             throw error;
         }
     }
 
-    // =================== TEAM SETTINGS MANAGEMENT ===================
-    
-    // Save team settings
-    async saveTeamSettings(settings) {
-        this.ensureInitialized();
+    async deleteCustomLineup(lineupName) {
+        if (!this.initialized) throw new Error('Firebase not initialized');
+
         try {
-            const settingsDoc = {
+            await this.db.collection('customLineups').doc(lineupName).delete();
+            await this.logActivity('lineup_deleted', `Custom lineup "${lineupName}" deleted`, { lineupName });
+            return true;
+        } catch (error) {
+            console.error('Error deleting custom lineup:', error);
+            throw error;
+        }
+    }
+
+    // Settings Management
+    async saveSettings(settings) {
+        if (!this.initialized) throw new Error('Firebase not initialized');
+
+        try {
+            const settingsRef = this.db.collection('settings').doc('teamSettings');
+            await settingsRef.set({
                 ...settings,
-                updatedAt: serverTimestamp()
-            };
+                lastModified: firebase.firestore.FieldValue.serverTimestamp()
+            });
 
-            await setDoc(doc(this.db, 'settings', 'team'), settingsDoc);
-            console.log('Team settings saved successfully');
+            return true;
         } catch (error) {
-            console.error('Error saving team settings:', error);
+            console.error('Error saving settings:', error);
             throw error;
         }
     }
 
-    // Load team settings
-    async loadTeamSettings() {
-        this.ensureInitialized();
+    async getSettings() {
+        if (!this.initialized) throw new Error('Firebase not initialized');
+
         try {
-            const settingsDoc = await getDoc(doc(this.db, 'settings', 'team'));
-            if (settingsDoc.exists()) {
-                return settingsDoc.data();
-            } else {
-                // Return default settings if none exist
-                return {
-                    theme: 'dark',
-                    autoSave: true,
-                    showCoordinates: true,
-                    snapToGrid: true,
-                    defaultActionMode: 'move'
-                };
-            }
+            const doc = await this.db.collection('settings').doc('teamSettings').get();
+            return doc.exists ? doc.data() : {};
         } catch (error) {
-            console.error('Error loading team settings:', error);
+            console.error('Error getting settings:', error);
             throw error;
         }
     }
 
-    // =================== ACTIVITY LOG ===================
-    
-    // Log user activity
-    async logActivity(action, details = {}) {
-        this.ensureInitialized();
+    // Activity Logging
+    async logActivity(action, description, metadata = {}) {
+        if (!this.initialized) return;
+
         try {
-            const activityDoc = {
+            await this.db.collection('activity').add({
                 action,
-                details,
-                timestamp: serverTimestamp(),
-                user: details.user || 'Anonymous'
-            };
-
-            await addDoc(collection(this.db, 'activity'), activityDoc);
+                description,
+                metadata,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userAgent: navigator.userAgent
+            });
         } catch (error) {
             console.error('Error logging activity:', error);
-            // Don't throw error for activity logging to avoid disrupting main functionality
         }
     }
 
-    // Get recent activity
     async getRecentActivity(limitCount = 50) {
-        this.ensureInitialized();
+        if (!this.initialized) throw new Error('Firebase not initialized');
+
         try {
-            const activityQuery = query(
-                collection(this.db, 'activity'),
-                orderBy('timestamp', 'desc'),
-                limit(limitCount)
-            );
-            const querySnapshot = await getDocs(activityQuery);
-            const activities = [];
-            
-            querySnapshot.forEach((doc) => {
-                activities.push({ id: doc.id, ...doc.data() });
-            });
-            
-            return activities;
+            const snapshot = await this.db.collection('activity')
+                .orderBy('timestamp', 'desc')
+                .limit(limitCount)
+                .get();
+
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) {
-            console.error('Error loading recent activity:', error);
+            console.error('Error getting recent activity:', error);
             throw error;
         }
     }
 
-    // =================== UTILITY METHODS ===================
-    
-    // Clean up all listeners
+    // Utility Methods
     cleanup() {
-        this.listeners.forEach((unsubscribe, key) => {
-            unsubscribe();
-            console.log(`Cleaned up listener: ${key}`);
+        // Unsubscribe from all listeners
+        this.listeners.forEach(unsubscribe => {
+            if (typeof unsubscribe === 'function') {
+                unsubscribe();
+            }
         });
         this.listeners.clear();
     }
 
-    // Check if online/offline
     isOnline() {
-        return navigator.onLine && this.isInitialized;
-    }
-
-    // Get server timestamp
-    getServerTimestamp() {
-        return serverTimestamp();
+        return navigator.onLine;
     }
 }
-
-// Create singleton instance
-const firebaseService = new FirebaseService();
-
-// Initialize Firebase when module loads
-firebaseService.initialize().then(success => {
-    if (success) {
-        console.log('🔥 Firebase Service ready for Steelers GamePlan!');
-        // Dispatch custom event to notify app that Firebase is ready
-        window.dispatchEvent(new CustomEvent('firebaseReady'));
-    } else {
-        console.warn('⚠️ Firebase Service failed to initialize. App will work in offline mode.');
-        window.dispatchEvent(new CustomEvent('firebaseError'));
-    }
-});
-
-export default firebaseService;

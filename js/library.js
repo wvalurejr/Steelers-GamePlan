@@ -1,6 +1,3 @@
-// Import Firebase service
-import { FirebaseService } from './firebase-service.js';
-
 // Library Manager for Play Organization and Management
 class LibraryManager {
     constructor() {
@@ -18,7 +15,7 @@ class LibraryManager {
     init() {
         // Get Firebase service instance
         this.firebaseService = FirebaseService.getInstance();
-        
+
         this.loadPlays();
         this.setupEventListeners();
         this.renderPlays();
@@ -575,9 +572,3 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-
-// Export the class for ES6 module usage
-export { LibraryManager };
-
-// Also add to window for backward compatibility
-window.LibraryManager = LibraryManager;

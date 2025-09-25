@@ -1,6 +1,3 @@
-// Import Firebase service
-import { FirebaseService } from './firebase-service.js';
-
 // Canvas Manager for Football Field Drawing
 class CanvasManager {
     constructor(canvasId) {
@@ -49,7 +46,7 @@ class CanvasManager {
     init() {
         // Get Firebase service instance
         this.firebaseService = FirebaseService.getInstance();
-        
+
         this.setupCanvas();
         this.setupEventListeners();
         this.drawField();
@@ -2315,12 +2312,6 @@ class CanvasManager {
         }
     }
 }
-
-// Export the class for ES6 module usage
-export { CanvasManager };
-
-// Also add to window for backward compatibility
-window.CanvasManager = CanvasManager;
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
