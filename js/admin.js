@@ -63,9 +63,11 @@ class AdminPanel {
         });
 
         // Teams Management
-        document.getElementById('add-team').addEventListener('click', () => this.showTeamModal());
+        document.getElementById('add-east-team').addEventListener('click', () => this.showTeamModal('East Side'));
+        document.getElementById('add-west-team').addEventListener('click', () => this.showTeamModal('West Side'));
         document.getElementById('cancel-team').addEventListener('click', () => this.hideTeamModal());
         document.getElementById('team-form').addEventListener('submit', (e) => {
+            console.log('Team form submitted');
             e.preventDefault();
             this.saveTeam();
         });
@@ -189,7 +191,7 @@ class AdminPanel {
             ]);
 
             this.updateUI();
-            
+
             // Calculate and update season stats
             this.updateSeasonStats();
             this.updateHomePageStats();
@@ -312,14 +314,14 @@ class AdminPanel {
                     <p><strong>Date:</strong> ${new Date(game.date).toLocaleDateString()}</p>
                     <p><strong>Location:</strong> ${game.location} ${game.time ? `• Time: ${game.time}` : ''}</p>
                     <p><strong>Status:</strong> <span class="status-badge ${game.status}">${game.status}</span></p>
-                    ${game.statistics && game.status === 'completed' ? 
-                        `<p><strong>Stats:</strong> 
-                            ${game.statistics.complete ? 
-                                '<span class="stats-complete">✅ Complete</span>' : 
-                                '<span class="stats-incomplete">⏳ Incomplete</span>'
-                            }
-                        </p>` : ''
+                    ${game.statistics && game.status === 'completed' ?
+                    `<p><strong>Stats:</strong> 
+                            ${game.statistics.complete ?
+                        '<span class="stats-complete">✅ Complete</span>' :
+                        '<span class="stats-incomplete">⏳ Incomplete</span>'
                     }
+                        </p>` : ''
+                }
                     ${game.highlights ? `<p><strong>Notes:</strong> ${game.highlights}</p>` : ''}
                 </div>
                 <div class="game-score">
@@ -407,7 +409,7 @@ class AdminPanel {
             await this.saveGames();
             this.renderGames();
             this.showNotification('Game deleted successfully!', 'success');
-            
+
             // Update season stats after deleting a game
             this.updateSeasonStats();
             this.updateHomePageStats();
@@ -417,7 +419,7 @@ class AdminPanel {
     // Season Statistics Calculation Methods
     updateSeasonStats() {
         const completedGames = this.games.filter(game => game.status === 'completed' && game.steelersScore !== undefined && game.opponentScore !== undefined);
-        
+
         let wins = 0;
         let losses = 0;
         let totalOffenseStats = {
@@ -525,7 +527,7 @@ class AdminPanel {
     toggleScoreSection(status) {
         const scoreSection = document.querySelector('.score-section');
         const statsSection = document.querySelector('.stats-section');
-        
+
         if (status === 'completed') {
             scoreSection.style.display = 'block';
             statsSection.style.display = 'block';
@@ -556,7 +558,7 @@ class AdminPanel {
             if (gameData.status === 'completed') {
                 gameData.steelersScore = parseInt(document.getElementById('steelers-score').value) || 0;
                 gameData.opponentScore = parseInt(document.getElementById('opponent-score').value) || 0;
-                
+
                 // Add statistics
                 gameData.statistics = {
                     complete: document.getElementById('stats-complete').checked,
@@ -586,7 +588,7 @@ class AdminPanel {
             await this.saveGames();
             this.renderGames();
             this.hideGameModal();
-            
+
             // Update season stats and home page
             this.updateSeasonStats();
             this.updateHomePageStats();
@@ -1302,14 +1304,17 @@ class AdminPanel {
         try {
             const teams = await this.firebaseService.getTeams();
             this.teams = teams || [];
+            console.log('Loaded teams from Firebase:', this.teams.length, this.teams);
         } catch (error) {
             console.warn('Failed to load teams from Firebase, using localStorage');
             this.teams = JSON.parse(localStorage.getItem('adminTeams')) || [];
+            console.log('Loaded teams from localStorage:', this.teams.length, this.teams);
         }
 
         // If no teams exist, populate with some default teams for the league
         if (this.teams.length === 0) {
             this.teams = this.getDefaultTeams();
+            console.log('Using default teams:', this.teams.length);
             // Save the default teams
             try {
                 await this.firebaseService.saveTeams(this.teams);
@@ -1443,6 +1448,8 @@ class AdminPanel {
         card.style.setProperty('--team-primary', team.primaryColor || '#000000');
         card.style.setProperty('--team-secondary', team.secondaryColor || '#ffffff');
 
+        console.log('Creating team card for:', team.name, 'with ID:', team.id);
+
         card.innerHTML = `
             <div class="team-header">
                 <h4 class="team-name">${team.name}</h4>
@@ -1467,17 +1474,25 @@ class AdminPanel {
     }
 
     showTeamModal(presetDivision = '') {
+        console.log('showTeamModal called with division:', presetDivision);
         const modal = document.getElementById('team-modal');
         const title = document.getElementById('team-modal-title');
+
+        if (!modal) {
+            console.error('Team modal not found!');
+            return;
+        }
 
         title.textContent = 'Add New Team';
         this.clearTeamForm();
 
         // Preset division if provided
         if (presetDivision) {
+            console.log('Setting preset division:', presetDivision);
             document.getElementById('team-division').value = presetDivision;
         }
 
+        console.log('Displaying modal');
         modal.style.display = 'flex';
         setTimeout(() => {
             document.getElementById('team-name').focus();
@@ -1491,21 +1506,44 @@ class AdminPanel {
     }
 
     clearTeamForm() {
-        document.getElementById('team-form').reset();
-        document.getElementById('team-primary-color').value = '#000000';
-        document.getElementById('team-secondary-color').value = '#ffffff';
-        // Remove edit mode data
-        delete document.getElementById('team-form').dataset.editingId;
+        console.log('clearTeamForm called');
+        const form = document.getElementById('team-form');
+        if (form) {
+            form.reset();
+            document.getElementById('team-primary-color').value = '#000000';
+            document.getElementById('team-secondary-color').value = '#ffffff';
+            // Remove edit mode data
+            delete form.dataset.editingId;
+            console.log('Team form cleared');
+        } else {
+            console.error('Team form not found!');
+        }
     }
 
     async saveTeam() {
+        console.log('saveTeam called');
         const form = document.getElementById('team-form');
         const editingId = form.dataset.editingId;
 
+        console.log('Form editing ID:', editingId);
+
+        // Validate required fields
+        const teamName = document.getElementById('team-name').value;
+        const teamDivision = document.getElementById('team-division').value;
+
+        console.log('Team name:', teamName);
+        console.log('Team division:', teamDivision);
+
+        if (!teamName || !teamDivision) {
+            console.log('Validation failed - missing required fields');
+            this.showNotification('Please fill in all required fields (Team Name and Division)', 'error');
+            return;
+        }
+
         const teamData = {
             id: editingId || 'team_' + Date.now(),
-            name: document.getElementById('team-name').value,
-            division: document.getElementById('team-division').value,
+            name: teamName,
+            division: teamDivision,
             primaryColor: document.getElementById('team-primary-color').value,
             secondaryColor: document.getElementById('team-secondary-color').value,
             location: document.getElementById('team-location').value,
@@ -1515,26 +1553,48 @@ class AdminPanel {
             updatedAt: new Date().toISOString()
         };
 
+        console.log('Team data to save:', teamData);
+
+        console.log('Team data to save:', teamData);
+
         try {
+            console.log('Teams before save:', this.teams.length);
+
             if (editingId) {
                 // Update existing team
+                console.log('Updating existing team with ID:', editingId);
                 const index = this.teams.findIndex(t => t.id === editingId);
+                console.log('Found team at index:', index);
                 if (index !== -1) {
                     this.teams[index] = { ...this.teams[index], ...teamData };
+                    console.log('Updated team:', this.teams[index]);
                 }
             } else {
                 // Add new team
+                console.log('Adding new team');
                 this.teams.push(teamData);
+                console.log('New teams array length:', this.teams.length);
             }
 
+            console.log('Attempting to save to Firebase...');
             // Save to Firebase
-            await this.firebaseService.saveTeams(this.teams);
+            if (this.firebaseService) {
+                await this.firebaseService.saveTeams(this.teams);
+                console.log('Firebase save successful');
+            } else {
+                console.warn('Firebase service not available');
+            }
 
             // Save to localStorage as backup
             localStorage.setItem('adminTeams', JSON.stringify(this.teams));
+            console.log('Saved to localStorage');
 
             this.renderTeams();
+            console.log('Teams rendered');
+
             this.hideTeamModal();
+            console.log('Modal hidden');
+
             this.showNotification(editingId ? 'Team updated successfully!' : 'Team added successfully!');
 
             // Update schedule opponent options
@@ -1547,8 +1607,15 @@ class AdminPanel {
     }
 
     editTeam(teamId) {
+        console.log('editTeam called with ID:', teamId);
         const team = this.teams.find(t => t.id === teamId);
-        if (!team) return;
+        if (!team) {
+            console.error('Team not found with ID:', teamId);
+            this.showNotification('Team not found. Please refresh and try again.', 'error');
+            return;
+        }
+
+        console.log('Found team to edit:', team.name);
 
         // Populate form with team data
         document.getElementById('team-name').value = team.name || '';
@@ -1559,29 +1626,53 @@ class AdminPanel {
         document.getElementById('team-coach').value = team.coach || '';
         document.getElementById('team-notes').value = team.notes || '';
 
+        console.log('Form populated with team data');
+
         // Set editing mode
         const form = document.getElementById('team-form');
         form.dataset.editingId = teamId;
+        console.log('Set form editing ID to:', teamId);
 
         // Update modal title and show
         document.getElementById('team-modal-title').textContent = 'Edit Team';
         document.getElementById('team-modal').style.display = 'flex';
+        console.log('Modal displayed for editing');
     }
 
     async deleteTeam(teamId) {
+        console.log('Attempting to delete team with ID:', teamId);
+
         const team = this.teams.find(t => t.id === teamId);
-        if (!team) return;
+        if (!team) {
+            console.error('Team not found with ID:', teamId);
+            this.showNotification('Team not found. Please refresh and try again.', 'error');
+            return;
+        }
+
+        console.log('Found team to delete:', team.name);
 
         if (confirm(`Are you sure you want to delete ${team.name}? This action cannot be undone.`)) {
             try {
+                console.log('Teams before deletion:', this.teams.length);
+
                 // Remove from teams array
                 this.teams = this.teams.filter(t => t.id !== teamId);
 
+                console.log('Teams after deletion:', this.teams.length);
+
                 // Save to Firebase
-                await this.firebaseService.saveTeams(this.teams);
+                if (this.firebaseService) {
+                    try {
+                        await this.firebaseService.saveTeams(this.teams);
+                        console.log('Successfully saved to Firebase');
+                    } catch (firebaseError) {
+                        console.warn('Firebase save failed, continuing with localStorage:', firebaseError);
+                    }
+                }
 
                 // Save to localStorage as backup
                 localStorage.setItem('adminTeams', JSON.stringify(this.teams));
+                console.log('Saved to localStorage');
 
                 this.renderTeams();
                 this.showNotification('Team deleted successfully!');

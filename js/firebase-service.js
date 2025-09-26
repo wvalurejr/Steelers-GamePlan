@@ -35,7 +35,7 @@ class FirebaseService {
                 throw new Error('Firebase SDK not loaded');
             }
 
-            // Firebase configuration
+            // Firebase configuration - Replace with your actual Firebase project config
             const firebaseConfig = {
                 apiKey: "AIzaSyC7xQqQrJqX9g_YLOoqYxs-VdJzHXsVxWg",
                 authDomain: "steelers-gameplan.firebaseapp.com",
@@ -45,22 +45,38 @@ class FirebaseService {
                 appId: "1:123456789012:web:abc123def456ghi789jkl"
             };
 
+            // For localhost development, you can also use Firebase emulator
+            // Uncomment the lines below if you want to use Firebase emulator:
+            // if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            //     this.db.useEmulator('localhost', 8080);
+            // }
+
             // Initialize Firebase
             this.app = firebase.initializeApp(firebaseConfig);
+
+            // Initialize Firestore with modern cache settings for offline persistence
             this.db = firebase.firestore();
 
-            // Enable offline persistence with better error handling
+            // Configure for localhost development
+            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                console.log('Running on localhost - configuring Firebase for local development');
+
+                // Add any localhost-specific configuration here
+                // For example, you might want to use different settings or emulator
+                this.db.useEmulator('localhost', 8080); // Uncomment if using emulator
+            }
+
+            // Use modern cache settings instead of deprecated enablePersistence
             try {
-                await this.db.enablePersistence();
-                console.log('Firebase offline persistence enabled');
+                const settings = {
+                    cache: firebase.firestore.MemoryLocalCache.getInstance()
+                };
+                this.db.settings(settings);
+                console.log('Firebase offline persistence enabled with modern cache settings');
             } catch (err) {
-                if (err.code === 'failed-precondition') {
-                    console.warn('Firebase persistence failed: Multiple tabs open');
-                } else if (err.code === 'unimplemented') {
-                    console.warn('Firebase persistence not supported in this browser');
-                } else {
-                    console.warn('Firebase persistence failed:', err);
-                }
+                console.warn('Firebase cache settings failed, falling back to default:', err);
+                // Fallback to basic settings if cache configuration fails
+                this.db.settings({});
             }
 
             this.initialized = true;
