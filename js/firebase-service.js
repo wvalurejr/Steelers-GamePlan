@@ -1,5 +1,7 @@
 // Firebase Service Module for Steelers GamePlan
 // Handles all Firebase operations for persistent, collaborative features
+// import { initializeApp } from "firebase/app";
+// import { getFirestore, initializeFirestore, memoryLocalCache } from "firebase/firestore";
 
 class FirebaseService {
     constructor() {
@@ -54,7 +56,7 @@ class FirebaseService {
             // Initialize Firebase
             this.app = firebase.initializeApp(firebaseConfig);
 
-            // Initialize Firestore with modern cache settings for offline persistence
+            // Initialize Firestore with modern cache settings for offline persistence            
             this.db = firebase.firestore();
 
             // Configure for localhost development
@@ -66,18 +68,20 @@ class FirebaseService {
                 this.db.useEmulator('localhost', 8080); // Uncomment if using emulator
             }
 
-            // Use modern cache settings instead of deprecated enablePersistence
-            try {
-                const settings = {
-                    cache: firebase.firestore.MemoryLocalCache.getInstance()
-                };
-                this.db.settings(settings);
-                console.log('Firebase offline persistence enabled with modern cache settings');
-            } catch (err) {
-                console.warn('Firebase cache settings failed, falling back to default:', err);
-                // Fallback to basic settings if cache configuration fails
-                this.db.settings({});
-            }
+            // Enable offline persistence with modern approach for Firebase v10
+            // try {
+            //     // Use the correct modern cache settings for Firebase v10.7.1
+            //     const settings = {
+            //         cache: firebase.firestore.MemoryLocalCache()
+            //     };
+            //     this.db.settings(settings);
+            //     console.log('Firebase offline persistence enabled with modern cache settings');
+            // } catch (err) {
+            //     console.warn('Modern cache settings not available, skipping persistence:', err);
+            //     // For Firebase v10, we'll skip persistence rather than use deprecated method
+            //     // The app will work fine without persistence using localStorage fallback
+            //     this.db.settings({});
+            // }
 
             this.initialized = true;
             console.log('Firebase initialized successfully');
