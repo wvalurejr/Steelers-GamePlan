@@ -1816,20 +1816,23 @@ class AdminPanel {
         if (confirm(`Are you sure you want to delete ${team.name}? This action cannot be undone.`)) {
             try {
                 console.log('Teams before deletion:', this.teams.length);
-
                 // Remove from teams array
                 this.teams = this.teams.filter(t => t.id !== teamId);
-
                 console.log('Teams after deletion:', this.teams.length);
 
-                // Save to Firebase
-                if (this.firebaseService) {
+                let firebaseSuccess = false;
+                if (this.firebaseService && this.firebaseService.isInitialized && this.firebaseService.isInitialized()) {
                     try {
                         await this.firebaseService.saveTeams(this.teams);
+                        firebaseSuccess = true;
                         console.log('Successfully saved to Firebase');
                     } catch (firebaseError) {
-                        console.warn('Firebase save failed, continuing with localStorage:', firebaseError);
+                        console.error('Firebase save failed:', firebaseError);
+                        this.showNotification('Failed to update Firebase. Changes saved locally only.', 'warning');
                     }
+                } else {
+                    console.warn('Firebase not initialized. Saving to localStorage only.');
+                    this.showNotification('Firebase not initialized. Changes saved locally only.', 'warning');
                 }
 
                 // Save to localStorage as backup
@@ -1837,11 +1840,9 @@ class AdminPanel {
                 console.log('Saved to localStorage');
 
                 this.renderTeams();
-                this.showNotification('Team deleted successfully!');
-
+                this.showNotification(firebaseSuccess ? 'Team deleted and synced to Firebase!' : 'Team deleted successfully!');
                 // Update schedule opponent options
                 this.updateOpponentOptions();
-
             } catch (error) {
                 console.error('Failed to delete team:', error);
                 this.showNotification('Failed to delete team. Please try again.', 'error');
