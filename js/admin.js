@@ -288,35 +288,29 @@ class AdminPanel {
         }
     }
 
-    switch(tabName) {
-            case 'season':
-        await this.loadSeasonData();
-        break;
-            case 'schedule':
-        await this.loadGames();
-        this.renderGames();
-        break;
-            case 'teams':
-        await this.loadTeams(); // Ensure this function is defined
-        this.renderTeams();
-        break;
-            case 'players':
-        await this.loadPlayers();
-        this.renderPlayers();
-        break;
-            case 'content':
-        await this.loadContentData();
-        this.populateContentForm();
-        break;
-            case 'settings':
-        await this.loadSettings();
-        this.populateSettingsForm();
-        break;
-            case 'archive':
-        await this.loadArchivedSeasons();
-        this.renderArchivedSeasons();
-        this.updateArchiveStats();
-        break;
+    async switchTabData(tabName) {
+        if (tabName === 'season') {
+            await this.loadSeasonData();
+        } else if (tabName === 'schedule') {
+            await this.loadGames();
+            this.renderGames();
+        } else if (tabName === 'teams') {
+            await this.loadTeams();
+            this.renderTeams();
+        } else if (tabName === 'players') {
+            await this.loadPlayers();
+            this.renderPlayers();
+        } else if (tabName === 'content') {
+            await this.loadContentData();
+            this.populateContentForm();
+        } else if (tabName === 'settings') {
+            await this.loadSettings();
+            this.populateSettingsForm();
+        } else if (tabName === 'archive') {
+            await this.loadArchivedSeasons();
+            this.renderArchivedSeasons();
+            this.updateArchiveStats();
+        }
     }
 
     // Season Management
