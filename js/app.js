@@ -1,6 +1,3 @@
-// Import Firebase service
-import { FirebaseService } from './firebase-service.js';
-
 // Main Application Controller
 class FootballChartApp {
     constructor() {
@@ -31,6 +28,7 @@ class FootballChartApp {
         this.setupEventListeners();
         this.setupThemeToggle();
         await this.loadStoredPlays();
+        await this.loadAdminContent(); // Load admin-managed content
         this.setupRouting();
         this.loadInitialPage();
     }
@@ -43,13 +41,17 @@ class FootballChartApp {
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
-                e.preventDefault();
+                // Only prevent default for internal navigation links (those with data-page attribute)
                 const page = link.getAttribute('data-page');
-                this.navigateToPage(page);
-                this.updateNavigation(link);
+                if (page) {
+                    e.preventDefault();
+                    this.navigateToPage(page);
+                    this.updateNavigation(link);
 
-                // Close mobile menu
-                navMenu.classList.remove('active');
+                    // Close mobile menu
+                    navMenu.classList.remove('active');
+                }
+                // If no data-page attribute (like admin link), allow normal navigation
             });
         });
 
@@ -695,7 +697,7 @@ class FootballChartApp {
             } else {
                 localStorage.setItem('autoLoadLineup', lineupName);
             }
-            
+
             if (lineupName) {
                 this.showNotification(`Auto-load set to: ${lineupName.replace('-', ' ').toUpperCase()}`, 'success');
             } else {
@@ -770,7 +772,7 @@ class FootballChartApp {
                 } else {
                     customLineups = JSON.parse(localStorage.getItem('customLineups') || '[]');
                 }
-                
+
                 if (customLineups.length > 0) {
                     // Add separator
                     const separator = document.createElement('option');
@@ -985,7 +987,7 @@ class FootballChartApp {
             } else {
                 // Fallback to localStorage
                 let storedPlays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
-                
+
                 // Update existing play or add new one
                 const existingIndex = storedPlays.findIndex(p => p.id === play.id);
                 if (existingIndex >= 0) {
@@ -993,7 +995,7 @@ class FootballChartApp {
                 } else {
                     storedPlays.push(play);
                 }
-                
+
                 localStorage.setItem('footballPlays', JSON.stringify(storedPlays));
             }
 
@@ -1009,11 +1011,11 @@ class FootballChartApp {
     async loadStoredPlays() {
         try {
             let plays = [];
-            
+
             if (this.firebaseService && this.firebaseService.isInitialized()) {
                 // Use Firebase
                 plays = await this.firebaseService.getPlays();
-                
+
                 // Set up real-time listener for plays
                 this.firebaseService.onPlaysChange((updatedPlays) => {
                     if (window.libraryManager) {
@@ -1024,11 +1026,11 @@ class FootballChartApp {
                 // Fallback to localStorage
                 plays = JSON.parse(localStorage.getItem('footballPlays') || '[]');
             }
-            
+
             if (window.libraryManager) {
                 window.libraryManager.setPlays(plays);
             }
-            
+
             return plays;
         } catch (error) {
             console.error('Error loading plays:', error);
@@ -1233,6 +1235,446 @@ class FootballChartApp {
             }, 300);
         }, 3000);
     }
+
+    // Admin Content Integration Methods
+    async loadAdminContent() {
+        try {
+            await Promise.all([
+                this.loadSeasonStats(),
+                this.loadHomePageData(),
+                this.loadTeamsData()
+            ]);
+
+            this.updateHomePage();
+        } catch (error) {
+            console.error('Error loading admin content:', error);
+            this.useDefaultData();
+        }
+    }
+
+    async loadSeasonStats() {
+        try {
+            let seasonStats = {};
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                seasonStats = await this.firebaseService.getSeasonData();
+            }
+
+            // Fallback to localStorage
+            if (!seasonStats || Object.keys(seasonStats).length === 0) {
+                seasonStats = JSON.parse(localStorage.getItem('seasonStats') || '{}');
+            }
+
+            this.seasonStats = {
+                wins: seasonStats.wins || 2,
+                losses: seasonStats.losses || 0,
+                winPercentage: seasonStats.winPercentage || 100,
+                totalGames: seasonStats.totalGames || 2,
+                gamesWithStats: seasonStats.gamesWithStats || 0,
+                offense: seasonStats.offense || {},
+                defense: seasonStats.defense || {}
+            };
+        } catch (error) {
+            console.error('Error loading season stats:', error);
+            this.useDefaultSeasonStats();
+        }
+    }
+
+    async loadHomePageData() {
+        try {
+            let homePageData = {};
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const contentData = await this.firebaseService.getContentData();
+                homePageData = contentData.homePageData || {};
+            }
+
+            // Fallback to localStorage
+            if (!homePageData || Object.keys(homePageData).length === 0) {
+                homePageData = JSON.parse(localStorage.getItem('homePageData') || '{}');
+            }
+
+            this.homePageData = {
+                currentSeason: homePageData.currentSeason || {
+                    year: 2025,
+                    wins: 2,
+                    losses: 0,
+                    winPercentage: 100
+                },
+                recentGames: homePageData.recentGames || [],
+                upcomingGames: homePageData.upcomingGames || []
+            };
+        } catch (error) {
+            console.error('Error loading home page data:', error);
+            this.useDefaultHomePageData();
+        }
+    }
+
+    async loadTeamsData() {
+        try {
+            let teams = [];
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                teams = await this.firebaseService.getTeams();
+            }
+
+            // Fallback to localStorage
+            if (!teams || teams.length === 0) {
+                teams = JSON.parse(localStorage.getItem('adminTeams') || '[]');
+            }
+
+            this.teams = teams;
+        } catch (error) {
+            console.error('Error loading teams data:', error);
+            this.teams = [];
+        }
+    }
+
+    useDefaultData() {
+        this.useDefaultSeasonStats();
+        this.useDefaultHomePageData();
+    }
+
+    useDefaultSeasonStats() {
+        this.seasonStats = {
+            wins: 2,
+            losses: 0,
+            winPercentage: 100,
+            totalGames: 2,
+            gamesWithStats: 0,
+            offense: {},
+            defense: {}
+        };
+    }
+
+    useDefaultHomePageData() {
+        this.homePageData = {
+            currentSeason: {
+                year: 2025,
+                wins: 2,
+                losses: 0,
+                winPercentage: 100
+            },
+            recentGames: [],
+            upcomingGames: []
+        };
+    }
+
+    async loadSeasonData() {
+        try {
+            let seasonData = {};
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const settings = await this.firebaseService.getSettings();
+                seasonData = settings.seasonData || {};
+            } else {
+                seasonData = JSON.parse(localStorage.getItem('seasonData') || '{}');
+            }
+
+            this.seasonData = {
+                year: seasonData.year || 2025,
+                wins: seasonData.wins || 2,
+                losses: seasonData.losses || 0,
+                standing: seasonData.standing || '1st Place - Bayou Division',
+                motto: seasonData.motto || 'Steel Strong, Houma Proud!',
+                ...seasonData
+            };
+        } catch (error) {
+            console.error('Error loading season data:', error);
+            // Set defaults
+            this.seasonData = {
+                year: 2025,
+                wins: 2,
+                losses: 0,
+                standing: '1st Place - Bayou Division',
+                motto: 'Steel Strong, Houma Proud!'
+            };
+        }
+    }
+
+    async loadScheduleData() {
+        try {
+            let games = [];
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const settings = await this.firebaseService.getSettings();
+                games = settings.games || [];
+            } else {
+                games = JSON.parse(localStorage.getItem('teamGames') || '[]');
+            }
+
+            this.games = games;
+        } catch (error) {
+            console.error('Error loading schedule data:', error);
+            this.games = [];
+        }
+    }
+
+    async loadPlayerData() {
+        try {
+            let players = [];
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const settings = await this.firebaseService.getSettings();
+                players = settings.players || [];
+            } else {
+                players = JSON.parse(localStorage.getItem('teamPlayers') || '[]');
+            }
+
+            this.players = players;
+        } catch (error) {
+            console.error('Error loading player data:', error);
+            this.players = [];
+        }
+    }
+
+    async loadContentData() {
+        try {
+            let contentData = {};
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const settings = await this.firebaseService.getSettings();
+                contentData = settings.contentData || {};
+            } else {
+                contentData = JSON.parse(localStorage.getItem('contentData') || '{}');
+            }
+
+            this.contentData = {
+                heroTitle: contentData.heroTitle || '🏆 Welcome Steelers! 🏆',
+                heroSubtitle: contentData.heroSubtitle || 'The Steelers organization believes that collaboration makes all things better. This GamePlan tool empowers our coaching staff to design, share, and perfect plays together - because great teams are built on great teamwork.',
+                coachGreeting: contentData.coachGreeting || 'Let\'s create championship plays together! 🥇',
+                seasonHighlights: contentData.seasonHighlights || '',
+                featureCards: contentData.featureCards || [
+                    { icon: '📊', title: 'Dynamic Play Charting', description: 'Create and edit plays with our interactive canvas system' },
+                    { icon: '📚', title: 'Play Library', description: 'Organize and manage all your team\'s plays in one place' },
+                    { icon: '👥', title: 'Team Collaboration', description: 'Work together with your coaching staff in real-time' },
+                    { icon: '📱', title: 'Mobile Friendly', description: 'Access your plays anywhere with responsive design' }
+                ]
+            };
+        } catch (error) {
+            console.error('Error loading content data:', error);
+            // Set defaults
+            this.contentData = {
+                heroTitle: '🏆 Welcome Steelers! 🏆',
+                heroSubtitle: 'The Steelers organization believes that collaboration makes all things better.',
+                coachGreeting: 'Let\'s create championship plays together! 🥇',
+                featureCards: [
+                    { icon: '📊', title: 'Dynamic Play Charting', description: 'Create and edit plays with our interactive canvas system' },
+                    { icon: '📚', title: 'Play Library', description: 'Organize and manage all your team\'s plays in one place' }
+                ]
+            };
+        }
+    }
+
+    async loadAppSettings() {
+        try {
+            let settings = {};
+
+            if (this.firebaseService && this.firebaseService.isInitialized()) {
+                const data = await this.firebaseService.getSettings();
+                settings = data.appSettings || {};
+            } else {
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            }
+
+            this.appSettings = {
+                showPlayerStats: settings.showPlayerStats !== false,
+                showSchedule: settings.showSchedule !== false,
+                publicScores: settings.publicScores !== false,
+                ...settings
+            };
+        } catch (error) {
+            console.error('Error loading app settings:', error);
+            this.appSettings = {
+                showPlayerStats: true,
+                showSchedule: true,
+                publicScores: true
+            };
+        }
+    }
+
+    updateHomePage() {
+        // Update season stats from admin data
+        this.updateSeasonStatsDisplay();
+
+        // Update schedule/games display
+        this.updateGamesDisplay();
+
+        // Update content if it exists
+        if (this.contentData) {
+            this.updateContentDisplay();
+        }
+    }
+
+    updateSeasonStatsDisplay() {
+        const wins = this.seasonStats.wins || 0;
+        const losses = this.seasonStats.losses || 0;
+        const percentage = this.seasonStats.winPercentage || 0;
+
+        // Update record display
+        const winsCard = document.querySelector('.record-card.wins');
+        const lossesCard = document.querySelector('.record-card.losses');
+        const percentageCard = document.querySelector('.record-card.percentage');
+
+        if (winsCard) {
+            winsCard.innerHTML = `
+                <h3>${wins}</h3>
+                <p>Wins</p>
+            `;
+        }
+
+        if (lossesCard) {
+            lossesCard.innerHTML = `
+                <h3>${losses}</h3>
+                <p>Losses</p>
+            `;
+        }
+
+        if (percentageCard) {
+            percentageCard.innerHTML = `
+                <h3>${percentage}%</h3>
+                <p>Win Rate</p>
+            `;
+        }
+
+        // Update season year
+        const seasonTitle = document.querySelector('.team-stats-section h2');
+        if (seasonTitle && this.homePageData.currentSeason) {
+            seasonTitle.textContent = `🏈 East Houma Steelers - ${this.homePageData.currentSeason.year} Season 🏈`;
+        }
+    }
+
+    updateGamesDisplay() {
+        const gamesGrid = document.querySelector('.games-grid');
+        if (!gamesGrid) return;
+
+        gamesGrid.innerHTML = '';
+
+        // Add recent completed games
+        if (this.homePageData.recentGames && this.homePageData.recentGames.length > 0) {
+            this.homePageData.recentGames.forEach(game => {
+                const gameCard = this.createGameCard(game, true);
+                gamesGrid.appendChild(gameCard);
+            });
+        }
+
+        // Add upcoming games
+        if (this.homePageData.upcomingGames && this.homePageData.upcomingGames.length > 0) {
+            this.homePageData.upcomingGames.forEach(game => {
+                const gameCard = this.createGameCard(game, false);
+                gamesGrid.appendChild(gameCard);
+            });
+        }
+
+        // If no games, show default content
+        if ((!this.homePageData.recentGames || this.homePageData.recentGames.length === 0) &&
+            (!this.homePageData.upcomingGames || this.homePageData.upcomingGames.length === 0)) {
+            this.addDefaultGameCards(gamesGrid);
+        }
+    }
+
+    createGameCard(game, isCompleted) {
+        const gameCard = document.createElement('div');
+        gameCard.className = `game-card ${isCompleted ? 'completed' : 'upcoming'} ${isCompleted && game.result === 'W' ? 'win' : ''} ${isCompleted && game.result === 'L' ? 'loss' : ''}`;
+
+        if (isCompleted) {
+            gameCard.innerHTML = `
+                <div class="game-header">
+                    <span class="week">${game.week}</span>
+                    <span class="result-badge">${game.result}</span>
+                    ${!game.statsComplete ? '<span class="stats-pending" title="Statistics incomplete - awaiting data entry">📊</span>' : ''}
+                </div>
+                <div class="game-matchup">
+                    <div class="team home-team">
+                        <span class="team-name">East Houma Steelers</span>
+                        ${game.showScore ? `<span class="score">${game.steelersScore}</span>` : '<span class="score">--</span>'}
+                    </div>
+                    <div class="vs">vs</div>
+                    <div class="team away-team">
+                        <span class="team-name">${game.opponent}</span>
+                        ${game.showScore ? `<span class="score">${game.opponentScore}</span>` : '<span class="score">--</span>'}
+                    </div>
+                </div>
+                <div class="game-details">
+                    <span class="game-location">${game.location}</span>
+                    <span class="game-date">${new Date(game.date).toLocaleDateString()}</span>
+                </div>
+                ${game.highlights ? `<div class="game-highlights">${game.highlights}</div>` : ''}
+            `;
+        } else {
+            gameCard.innerHTML = `
+                <div class="game-header">
+                    <span class="week">${game.week}</span>
+                    <span class="status-badge upcoming">Upcoming</span>
+                </div>
+                <div class="game-matchup">
+                    <div class="team home-team">
+                        <span class="team-name">East Houma Steelers</span>
+                    </div>
+                    <div class="vs">vs</div>
+                    <div class="team away-team">
+                        <span class="team-name">${game.opponent}</span>
+                    </div>
+                </div>
+                <div class="game-details">
+                    <span class="game-location">${game.location}</span>
+                    <span class="game-date">${new Date(game.date).toLocaleDateString()}</span>
+                    ${game.time ? `<span class="game-time">${game.time}</span>` : ''}
+                </div>
+            `;
+        }
+
+        return gameCard;
+    }
+
+    addDefaultGameCards(gamesGrid) {
+        // Add some default game cards if no admin data is available
+        const defaultGames = [
+            {
+                week: 'Week 1',
+                opponent: 'Thibodaux Tigers',
+                location: 'Home',
+                steelersScore: 28,
+                opponentScore: 14,
+                result: 'W',
+                showScore: true,
+                date: '2025-09-01',
+                highlights: 'Dominant performance with 3 rushing touchdowns!'
+            },
+            {
+                week: 'Week 2',
+                opponent: 'Bayou Bulldogs',
+                location: 'Away',
+                steelersScore: 21,
+                opponentScore: 7,
+                result: 'W',
+                showScore: true,
+                date: '2025-09-08',
+                highlights: 'Stellar defensive showing with 2 interceptions.'
+            }
+        ];
+
+        defaultGames.forEach(game => {
+            const gameCard = this.createGameCard(game, true);
+            gamesGrid.appendChild(gameCard);
+        });
+    }
+
+    updateContentDisplay() {
+        const heroTitle = document.querySelector('.hero-title');
+        const heroSubtitle = document.querySelector('.hero-subtitle');
+        const coachGreeting = document.querySelector('.coach-greeting');
+
+        if (this.contentData.heroTitle && heroTitle) {
+            heroTitle.textContent = this.contentData.heroTitle;
+        }
+        if (this.contentData.heroSubtitle && heroSubtitle) {
+            heroSubtitle.innerHTML = this.contentData.heroSubtitle;
+        }
+        if (this.contentData.coachGreeting && coachGreeting) {
+            coachGreeting.textContent = this.contentData.coachGreeting;
+        }
+    }
 }
 
 // Utility functions
@@ -1261,17 +1703,8 @@ function throttle(func, limit) {
     };
 }
 
-// Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.footballApp = new FootballChartApp();
-
-    // Initialize library manager
-    window.libraryManager = new LibraryManager();
-    window.libraryManager.init();
-});
-
-// Service Worker registration for PWA capabilities (if needed)
-if ('serviceWorker' in navigator) {
+// Service Worker registration for PWA capabilities (only for HTTPS/HTTP)
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
@@ -1304,9 +1737,3 @@ function toggleToolbar() {
         document.body.appendChild(overlay);
     }
 }
-
-// Export the class for ES6 module usage
-export { FootballChartApp };
-
-// Also add to window for backward compatibility
-window.FootballChartApp = FootballChartApp;
