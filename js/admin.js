@@ -17,75 +17,108 @@ class AdminPanel {
         this.init();
     }
 
+    // Version counter helpers
+    getVersion() {
+        return parseInt(localStorage.getItem('adminVersion') || '0', 10);
+    }
+
+    incrementVersion() {
+        let v = this.getVersion();
+        v++;
+        localStorage.setItem('adminVersion', v);
+        console.log('Admin data version incremented:', v);
+    }
+
     init() {
-        console.log('AdminPanel initializing...');
+        try {
+            console.log('AdminPanel initializing...');
+            // Get Firebase service instance
+            this.firebaseService = FirebaseService.getInstance();
 
-        // Get Firebase service instance
-        this.firebaseService = FirebaseService.getInstance();
+            this.setupEventListeners();
+            this.setupTheme();
+            this.loadStoredPassword();
+            this.showLoginModal();
 
-        this.setupEventListeners();
-        this.setupTheme();
-        this.loadStoredPassword();
-        this.showLoginModal();
-
-        console.log('AdminPanel initialized successfully');
+            console.log('AdminPanel initialized successfully');
+        } catch (err) {
+            console.error('Critical error during AdminPanel initialization:', err);
+            this.showNotification('Critical error during admin initialization: ' + err.message, 'error');
+        }
+        // Show version number on load
+        console.log('Admin data version:', this.getVersion());
     }
 
     setupEventListeners() {
-        // Login functionality
-        document.getElementById('login-btn').addEventListener('click', () => this.handleLogin());
-        document.getElementById('admin-password').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.handleLogin();
-        });
+        try {
+            // Helper to safely add event listeners
+            function safeAdd(id, event, handler) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener(event, handler);
+                } else {
+                    console.warn('Missing DOM element for event listener:', id);
+                }
+            }
 
-        // Tab navigation
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
-        });
+            // Login functionality
+            safeAdd('login-btn', 'click', () => this.handleLogin());
+            safeAdd('admin-password', 'keypress', (e) => {
+                if (e.key === 'Enter') this.handleLogin();
+            });
 
-        // Season Management
-        document.getElementById('update-season').addEventListener('click', () => this.updateSeasonInfo());
+            // Tab navigation
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+            });
 
-        // Schedule Management
-        document.getElementById('add-game').addEventListener('click', () => this.showGameModal());
-        document.getElementById('save-game').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.saveGame();
-        });
-        document.getElementById('cancel-game').addEventListener('click', () => this.hideGameModal());
-        document.getElementById('game-status').addEventListener('change', (e) => this.toggleScoreSection(e.target.value));
+            // Season Management
+            safeAdd('update-season', 'click', () => this.updateSeasonInfo());
 
-        // Player Management
-        document.getElementById('add-player').addEventListener('click', () => this.showPlayerModal());
-        document.getElementById('cancel-player').addEventListener('click', () => this.hidePlayerModal());
-        document.getElementById('player-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.savePlayer();
-        });
+            // Schedule Management
+            safeAdd('add-game', 'click', () => this.showGameModal());
+            safeAdd('save-game', 'click', (e) => {
+                e.preventDefault();
+                this.saveGame();
+            });
+            safeAdd('cancel-game', 'click', () => this.hideGameModal());
+            safeAdd('game-status', 'change', (e) => this.toggleScoreSection(e.target.value));
 
-        // Teams Management
-        document.getElementById('add-east-team').addEventListener('click', () => this.showTeamModal('East Side'));
-        document.getElementById('add-west-team').addEventListener('click', () => this.showTeamModal('West Side'));
-        document.getElementById('cancel-team').addEventListener('click', () => this.hideTeamModal());
-        document.getElementById('team-form').addEventListener('submit', (e) => {
-            console.log('Team form submitted');
-            e.preventDefault();
-            this.saveTeam();
-        });
+            // Player Management
+            safeAdd('add-player', 'click', () => this.showPlayerModal());
+            safeAdd('cancel-player', 'click', () => this.hidePlayerModal());
+            safeAdd('player-form', 'submit', (e) => {
+                e.preventDefault();
+                this.savePlayer();
+            });
 
-        // Content Management
-        document.getElementById('add-feature-card').addEventListener('click', () => this.addFeatureCard());
-        document.getElementById('update-content').addEventListener('click', () => this.updateContent());
+            // Teams Management
+            safeAdd('add-east-team', 'click', () => this.showTeamModal('East Side'));
+            safeAdd('add-west-team', 'click', () => this.showTeamModal('West Side'));
+            safeAdd('cancel-team', 'click', () => this.hideTeamModal());
+            safeAdd('team-form', 'submit', (e) => {
+                console.log('Team form submitted');
+                e.preventDefault();
+                this.saveTeam();
+            });
 
-        // Settings
-        document.getElementById('change-password').addEventListener('click', () => this.changePassword());
-        document.getElementById('export-data').addEventListener('click', () => this.exportData());
-        document.getElementById('backup-data').addEventListener('click', () => this.createBackup());
-        document.getElementById('clear-cache').addEventListener('click', () => this.clearCache());
-        document.getElementById('save-settings').addEventListener('click', () => this.saveSettings());
+            // Content Management
+            safeAdd('add-feature-card', 'click', () => this.addFeatureCard());
+            safeAdd('update-content', 'click', () => this.updateContent());
 
-        // Archive System
-        document.getElementById('archive-season').addEventListener('click', () => this.archiveSeason());
+            // Settings
+            safeAdd('change-password', 'click', () => this.changePassword());
+            safeAdd('export-data', 'click', () => this.exportData());
+            safeAdd('backup-data', 'click', () => this.createBackup());
+            safeAdd('clear-cache', 'click', () => this.clearCache());
+            safeAdd('save-settings', 'click', () => this.saveSettings());
+
+            // Archive System
+            safeAdd('archive-season', 'click', () => this.archiveSeason());
+        } catch (err) {
+            console.error('Error during setupEventListeners:', err);
+            this.showNotification('Error setting up admin event listeners: ' + err.message, 'error');
+        }
     }
 
     setupTheme() {
@@ -93,16 +126,21 @@ class AdminPanel {
         const currentTheme = localStorage.getItem('theme') || 'dark';
 
         document.documentElement.setAttribute('data-theme', currentTheme);
-        themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-        });
+        if (themeToggle) {
+            themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+                console.log('Theme toggled:', newTheme);
+            });
+            console.log('Theme toggle initialized:', themeToggle.textContent);
+        } else {
+            console.warn('Theme toggle button not found');
+        }
+        console.log('Theme applied:', currentTheme);
     }
 
     loadStoredPassword() {
@@ -135,10 +173,15 @@ class AdminPanel {
 
     hideLoginModal() {
         const modal = document.getElementById('login-modal');
-        modal.classList.remove('show');
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 300);
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                console.log('Login modal hidden:', modal.style.display);
+            }, 300);
+        } else {
+            console.warn('Login modal not found when trying to hide');
+        }
     }
 
     handleLogin() {
@@ -149,7 +192,13 @@ class AdminPanel {
         if (password === this.adminPassword) {
             this.isAuthenticated = true;
             this.hideLoginModal();
-            document.getElementById('admin-content').style.display = 'block';
+            const adminContent = document.getElementById('admin-content');
+            if (adminContent) {
+                adminContent.style.display = 'block';
+                console.log('Admin content shown:', adminContent.style.display);
+            } else {
+                console.warn('Admin content not found when trying to show');
+            }
             this.loadAdminData();
         } else {
             errorDiv.style.display = 'block';
@@ -194,7 +243,7 @@ class AdminPanel {
                 this.loadSeasonData(),
                 this.loadGames(),
                 this.loadPlayers(),
-                this.loadTeams(),
+                this.loadTeams(), // Ensure this function is defined
                 this.loadContentData(),
                 this.loadSettings(),
                 this.loadArchivedSeasons()
@@ -207,68 +256,67 @@ class AdminPanel {
             console.error('Error loading admin data:', error);
             this.showNotification('Error loading admin data', 'error');
         }
-        showLocalStorageWarning() {
-            let warning = document.getElementById('localstorage-warning');
-            if (!warning) {
-                warning = document.createElement('div');
-                warning.id = 'localstorage-warning';
-                warning.style.background = '#ff9800';
-                warning.style.color = '#222';
-                warning.style.padding = '12px';
-                warning.style.textAlign = 'center';
-                warning.style.fontWeight = 'bold';
-                warning.style.position = 'fixed';
-                warning.style.top = '0';
-                warning.style.left = '0';
-                warning.style.width = '100%';
-                warning.style.zIndex = '9999';
-                warning.textContent = '⚠️ Firebase is not available. Admin data is using localStorage fallback. Changes will NOT sync across devices.';
-                document.body.appendChild(warning);
-            } else {
-                warning.style.display = 'block';
-            }
-            this.showNotification('Admin is using localStorage fallback. Firebase is not initialized.', 'warning');
-        }
+    }
 
-        hideLocalStorageWarning() {
-            const warning = document.getElementById('localstorage-warning');
-            if (warning) {
-                warning.style.display = 'none';
-            }
+    showLocalStorageWarning() {
+        let warning = document.getElementById('localstorage-warning');
+        if (!warning) {
+            warning = document.createElement('div');
+            warning.id = 'localstorage-warning';
+            warning.style.background = '#ff9800';
+            warning.style.color = '#222';
+            warning.style.padding = '12px';
+            warning.style.textAlign = 'center';
+            warning.style.fontWeight = 'bold';
+            warning.style.position = 'fixed';
+            warning.style.top = '0';
+            warning.style.left = '0';
+            warning.style.width = '100%';
+            warning.style.zIndex = '9999';
+            warning.textContent = '⚠️ Firebase is not available. Admin data is using localStorage fallback. Changes will NOT sync across devices.';
+            document.body.appendChild(warning);
+        } else {
+            warning.style.display = 'block';
+        }
+        this.showNotification('Admin is using localStorage fallback. Firebase is not initialized.', 'warning');
+    }
+
+    hideLocalStorageWarning() {
+        const warning = document.getElementById('localstorage-warning');
+        if (warning) {
+            warning.style.display = 'none';
         }
     }
 
-    async loadTabData(tabName) {
-        switch (tabName) {
+    switch(tabName) {
             case 'season':
-                await this.loadSeasonData();
-                break;
+        await this.loadSeasonData();
+        break;
             case 'schedule':
-                await this.loadGames();
-                this.renderGames();
-                break;
+        await this.loadGames();
+        this.renderGames();
+        break;
             case 'teams':
-                await this.loadTeams();
-                this.renderTeams();
-                break;
+        await this.loadTeams(); // Ensure this function is defined
+        this.renderTeams();
+        break;
             case 'players':
-                await this.loadPlayers();
-                this.renderPlayers();
-                break;
+        await this.loadPlayers();
+        this.renderPlayers();
+        break;
             case 'content':
-                await this.loadContentData();
-                this.populateContentForm();
-                break;
+        await this.loadContentData();
+        this.populateContentForm();
+        break;
             case 'settings':
-                await this.loadSettings();
-                this.populateSettingsForm();
-                break;
+        await this.loadSettings();
+        this.populateSettingsForm();
+        break;
             case 'archive':
-                await this.loadArchivedSeasons();
-                this.renderArchivedSeasons();
-                this.updateArchiveStats();
-                break;
-        }
+        await this.loadArchivedSeasons();
+        this.renderArchivedSeasons();
+        this.updateArchiveStats();
+        break;
     }
 
     // Season Management
@@ -469,7 +517,7 @@ class AdminPanel {
             this.renderGames();
             this.showNotification('Game deleted successfully!', 'success');
 
-            // Update season stats after deleting a game
+            // Removed stray this.loadTeams(),
             this.updateSeasonStats();
             this.updateHomePageStats();
         }
@@ -506,6 +554,7 @@ class AdminPanel {
             // Aggregate statistics
             if (game.statistics && game.statistics.complete) {
                 gamesWithStats++;
+                this.incrementVersion();
                 totalOffenseStats.totalYards += game.statistics.offense.totalYards || 0;
                 totalOffenseStats.passingYards += game.statistics.offense.passingYards || 0;
                 totalOffenseStats.rushingYards += game.statistics.offense.rushingYards || 0;
@@ -667,6 +716,7 @@ class AdminPanel {
             } else {
                 localStorage.setItem('teamGames', JSON.stringify(this.games));
             }
+            this.incrementVersion();
         } catch (error) {
             console.error('Error saving games:', error);
             throw error;
@@ -837,6 +887,7 @@ class AdminPanel {
             } else {
                 localStorage.setItem('teamPlayers', JSON.stringify(this.players));
             }
+            this.incrementVersion();
         } catch (error) {
             console.error('Error saving players:', error);
             throw error;
@@ -1161,6 +1212,7 @@ class AdminPanel {
                 }
             } else {
                 this.archivedSeasons = JSON.parse(localStorage.getItem('archivedSeasons') || 'null');
+                this.incrementVersion();
                 if (!this.archivedSeasons) {
                     this.archivedSeasons = [...defaultArchived];
                     localStorage.setItem('archivedSeasons', JSON.stringify(this.archivedSeasons));
@@ -1284,6 +1336,7 @@ class AdminPanel {
             tackles: 0,
             interceptions: 0
         }));
+        this.incrementVersion();
 
         localStorage.setItem('seasonData', JSON.stringify(newSeasonData));
         localStorage.setItem('teamGames', JSON.stringify([]));
@@ -1307,6 +1360,7 @@ class AdminPanel {
             } else {
                 localStorage.setItem('archivedSeasons', JSON.stringify(this.archivedSeasons));
             }
+            this.incrementVersion();
         } catch (error) {
             console.error('Error saving archived seasons:', error);
             throw error;
