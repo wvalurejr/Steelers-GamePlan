@@ -14,6 +14,9 @@ class FirebaseService {
         this.initialized = false;
         this.listeners = new Map();
 
+        // Feature switch: disable localhost fallback by default
+        this.enableLocalhostFallback = false;
+
         FirebaseService.instance = this;
         return this;
     }
@@ -61,11 +64,14 @@ class FirebaseService {
 
             // Configure for localhost development
             if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-                console.log('Running on localhost - configuring Firebase for local development');
-
-                // Add any localhost-specific configuration here
-                // For example, you might want to use different settings or emulator
-                this.db.useEmulator('localhost', 8080); // Uncomment if using emulator
+                if (this.enableLocalhostFallback) {
+                    console.log('Running on localhost - configuring Firebase for local development (fallback ENABLED)');
+                    // Add any localhost-specific configuration here
+                    // For example, you might want to use different settings or emulator
+                    this.db.useEmulator('localhost', 8080); // Uncomment if using emulator
+                } else {
+                    console.warn('Localhost fallback for Firebase is DISABLED by feature switch.');
+                }
             }
 
             // Enable offline persistence with modern approach for Firebase v10
