@@ -2,6 +2,7 @@
 class AdminPanel {
     constructor() {
         this.firebaseService = null;
+        this.usingLocalStorageFallback = false;
         this.currentSeason = 2025;
         this.adminPassword = 'SteelersChampions2025!'; // Default password - should be changed
         this.isAuthenticated = false;
@@ -180,6 +181,15 @@ class AdminPanel {
 
     async loadAdminData() {
         try {
+            // Check if Firebase is initialized
+            if (!(this.firebaseService && this.firebaseService.isInitialized())) {
+                this.usingLocalStorageFallback = true;
+                this.showLocalStorageWarning();
+            } else {
+                this.usingLocalStorageFallback = false;
+                this.hideLocalStorageWarning();
+            }
+
             await Promise.all([
                 this.loadSeasonData(),
                 this.loadGames(),
@@ -191,13 +201,40 @@ class AdminPanel {
             ]);
 
             this.updateUI();
-
-            // Calculate and update season stats
             this.updateSeasonStats();
             this.updateHomePageStats();
         } catch (error) {
             console.error('Error loading admin data:', error);
             this.showNotification('Error loading admin data', 'error');
+        }
+        showLocalStorageWarning() {
+            let warning = document.getElementById('localstorage-warning');
+            if (!warning) {
+                warning = document.createElement('div');
+                warning.id = 'localstorage-warning';
+                warning.style.background = '#ff9800';
+                warning.style.color = '#222';
+                warning.style.padding = '12px';
+                warning.style.textAlign = 'center';
+                warning.style.fontWeight = 'bold';
+                warning.style.position = 'fixed';
+                warning.style.top = '0';
+                warning.style.left = '0';
+                warning.style.width = '100%';
+                warning.style.zIndex = '9999';
+                warning.textContent = '⚠️ Firebase is not available. Admin data is using localStorage fallback. Changes will NOT sync across devices.';
+                document.body.appendChild(warning);
+            } else {
+                warning.style.display = 'block';
+            }
+            this.showNotification('Admin is using localStorage fallback. Firebase is not initialized.', 'warning');
+        }
+
+        hideLocalStorageWarning() {
+            const warning = document.getElementById('localstorage-warning');
+            if (warning) {
+                warning.style.display = 'none';
+            }
         }
     }
 
@@ -238,20 +275,32 @@ class AdminPanel {
     async loadSeasonData() {
         try {
             let seasonData = {};
-
+            const defaultSeason = {
+                year: 2025,
+                wins: 2,
+                losses: 0,
+                standing: '1st Place - Bayou Division',
+                motto: 'Steel Strong, Houma Proud!'
+            };
             if (this.firebaseService && this.firebaseService.isInitialized()) {
                 const data = await this.firebaseService.getSettings();
-                seasonData = data.seasonData || {};
+                seasonData = data.seasonData || null;
+                if (!seasonData) {
+                    seasonData = { ...defaultSeason };
+                    await this.firebaseService.saveSettings({ seasonData });
+                }
             } else {
-                seasonData = JSON.parse(localStorage.getItem('seasonData') || '{}');
+                seasonData = JSON.parse(localStorage.getItem('seasonData') || 'null');
+                if (!seasonData) {
+                    seasonData = { ...defaultSeason };
+                    localStorage.setItem('seasonData', JSON.stringify(seasonData));
+                }
             }
-
-            // Populate form with current data
-            document.getElementById('season-year').value = seasonData.year || 2025;
-            document.getElementById('season-wins').value = seasonData.wins || 2;
-            document.getElementById('season-losses').value = seasonData.losses || 0;
-            document.getElementById('division-standing').value = seasonData.standing || '1st Place - Bayou Division';
-            document.getElementById('team-motto').value = seasonData.motto || 'Steel Strong, Houma Proud!';
+            document.getElementById('season-year').value = seasonData.year;
+            document.getElementById('season-wins').value = seasonData.wins;
+            document.getElementById('season-losses').value = seasonData.losses;
+            document.getElementById('division-standing').value = seasonData.standing;
+            document.getElementById('team-motto').value = seasonData.motto;
         } catch (error) {
             console.error('Error loading season data:', error);
         }
@@ -284,11 +333,21 @@ class AdminPanel {
     // Schedule Management
     async loadGames() {
         try {
+            const defaultGames = [];
             if (this.firebaseService && this.firebaseService.isInitialized()) {
                 const settings = await this.firebaseService.getSettings();
-                this.games = settings.games || [];
+                this.games = settings.games || null;
+                if (!this.games) {
+                    this.games = [...defaultGames];
+                    settings.games = this.games;
+                    await this.firebaseService.saveSettings(settings);
+                }
             } else {
-                this.games = JSON.parse(localStorage.getItem('teamGames') || '[]');
+                this.games = JSON.parse(localStorage.getItem('teamGames') || 'null');
+                if (!this.games) {
+                    this.games = [...defaultGames];
+                    localStorage.setItem('teamGames', JSON.stringify(this.games));
+                }
             }
         } catch (error) {
             console.error('Error loading games:', error);
@@ -617,11 +676,21 @@ class AdminPanel {
     // Player Management
     async loadPlayers() {
         try {
+            const defaultPlayers = [];
             if (this.firebaseService && this.firebaseService.isInitialized()) {
                 const settings = await this.firebaseService.getSettings();
-                this.players = settings.players || [];
+                this.players = settings.players || null;
+                if (!this.players) {
+                    this.players = [...defaultPlayers];
+                    settings.players = this.players;
+                    await this.firebaseService.saveSettings(settings);
+                }
             } else {
-                this.players = JSON.parse(localStorage.getItem('teamPlayers') || '[]');
+                this.players = JSON.parse(localStorage.getItem('teamPlayers') || 'null');
+                if (!this.players) {
+                    this.players = [...defaultPlayers];
+                    localStorage.setItem('teamPlayers', JSON.stringify(this.players));
+                }
             }
         } catch (error) {
             console.error('Error loading players:', error);
@@ -777,11 +846,32 @@ class AdminPanel {
     // Content Management
     async loadContentData() {
         try {
+            const defaultContent = {
+                heroTitle: '🏆 Welcome Steelers! 🏆',
+                heroSubtitle: 'The Steelers organization believes that collaboration makes all things better. This GamePlan tool empowers our coaching staff to design, share, and perfect plays together - because great teams are built on great teamwork.',
+                coachGreeting: 'Let\'s create championship plays together! 🥇',
+                seasonHighlights: '',
+                featureCards: [
+                    { icon: '📊', title: 'Dynamic Play Charting', description: 'Create and edit plays with our interactive canvas system' },
+                    { icon: '📚', title: 'Play Library', description: 'Organize and manage all your team\'s plays in one place' },
+                    { icon: '👥', title: 'Team Collaboration', description: 'Work together with your coaching staff in real-time' },
+                    { icon: '📱', title: 'Mobile Friendly', description: 'Access your plays anywhere with responsive design' }
+                ]
+            };
             if (this.firebaseService && this.firebaseService.isInitialized()) {
                 const settings = await this.firebaseService.getSettings();
-                this.contentData = settings.contentData || {};
+                this.contentData = settings.contentData || null;
+                if (!this.contentData) {
+                    this.contentData = { ...defaultContent };
+                    settings.contentData = this.contentData;
+                    await this.firebaseService.saveSettings(settings);
+                }
             } else {
-                this.contentData = JSON.parse(localStorage.getItem('contentData') || '{}');
+                this.contentData = JSON.parse(localStorage.getItem('contentData') || 'null');
+                if (!this.contentData) {
+                    this.contentData = { ...defaultContent };
+                    localStorage.setItem('contentData', JSON.stringify(this.contentData));
+                }
             }
         } catch (error) {
             console.error('Error loading content data:', error);
@@ -898,11 +988,25 @@ class AdminPanel {
     // Settings Management
     async loadSettings() {
         try {
+            const defaultSettings = {
+                showPlayerStats: true,
+                showSchedule: true,
+                publicScores: true
+            };
             if (this.firebaseService && this.firebaseService.isInitialized()) {
                 const data = await this.firebaseService.getSettings();
-                this.settings = data.appSettings || {};
+                this.settings = data.appSettings || null;
+                if (!this.settings) {
+                    this.settings = { ...defaultSettings };
+                    data.appSettings = this.settings;
+                    await this.firebaseService.saveSettings(data);
+                }
             } else {
-                this.settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                this.settings = JSON.parse(localStorage.getItem('appSettings') || 'null');
+                if (!this.settings) {
+                    this.settings = { ...defaultSettings };
+                    localStorage.setItem('appSettings', JSON.stringify(this.settings));
+                }
             }
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -1046,11 +1150,21 @@ class AdminPanel {
     // Archive System
     async loadArchivedSeasons() {
         try {
+            const defaultArchived = [];
             if (this.firebaseService && this.firebaseService.isInitialized()) {
                 const settings = await this.firebaseService.getSettings();
-                this.archivedSeasons = settings.archivedSeasons || [];
+                this.archivedSeasons = settings.archivedSeasons || null;
+                if (!this.archivedSeasons) {
+                    this.archivedSeasons = [...defaultArchived];
+                    settings.archivedSeasons = this.archivedSeasons;
+                    await this.firebaseService.saveSettings(settings);
+                }
             } else {
-                this.archivedSeasons = JSON.parse(localStorage.getItem('archivedSeasons') || '[]');
+                this.archivedSeasons = JSON.parse(localStorage.getItem('archivedSeasons') || 'null');
+                if (!this.archivedSeasons) {
+                    this.archivedSeasons = [...defaultArchived];
+                    localStorage.setItem('archivedSeasons', JSON.stringify(this.archivedSeasons));
+                }
             }
         } catch (error) {
             console.error('Error loading archived seasons:', error);
